@@ -4,1008 +4,1005 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>الإدارة العامة للموارد المائية والري بجنوب الوادي بتوشكى</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
-    :root {
-      --primary: #0b4a7d; --primary-dark: #072f52; --primary-light: #e8f1f8;
-      --accent: #0d7a73; --accent-hover: #095c57;
-      --bg: #f1f5f9; --surface: #ffffff; --text: #0f172a; --muted: #64748b; --border: #cbd5e1;
-      --success: #15803d; --success-bg: #dcfce7;
-      --warning: #b45309; --warning-bg: #fef3c7;
-      --danger: #b91c1c; --danger-bg: #fee2e2;
-      --sidebar-w: 275px; --radius: 12px;
+    :root{
+      --navy:#0a2540; --navy2:#0f3558; --teal:#0f766e; --teal-h:#0b5d57; --blue:#1d5fa8;
+      --bg:#eef2f6; --card:#fff; --text:#0f172a; --muted:#64748b; --line:#dbe3ec;
+      --ok:#15803d; --ok-bg:#dcfce7; --warn:#b45309; --warn-bg:#fef3c7; --bad:#b91c1c; --bad-bg:#fee2e2;
+      --side:270px; --r:12px;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; }
-    body { background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.6; }
+    *{box-sizing:border-box;margin:0;padding:0;font-family:"Segoe UI",Tahoma,Arial,sans-serif}
+    body{background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+    a{color:inherit;text-decoration:none}
+    button{font-family:inherit}
 
-    .auth-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1.5rem;
-      background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 55%, var(--accent) 100%); }
-    .auth-card { background: #fff; width: 100%; max-width: 470px; border-radius: 16px; padding: 2rem; box-shadow: 0 20px 45px rgba(0,0,0,.25); }
-    .auth-header { text-align: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem; }
-    .auth-header .ministry { font-size: .85rem; color: var(--accent); font-weight: 700; }
-    .auth-header h1 { font-size: 1.18rem; color: var(--primary-dark); margin: .3rem 0; font-weight: 800; }
-    .auth-header .date-pill { display: inline-block; background: var(--primary-light); color: var(--primary); padding: .25rem .75rem; border-radius: 999px; font-size: .82rem; font-weight: 600; margin-top: .35rem; }
-    .error-msg { background: var(--danger-bg); color: var(--danger); border: 1px solid #fecaca; padding: .6rem .8rem; border-radius: 8px; font-size: .85rem; font-weight: 600; display: none; }
-    .error-msg.show { display: block; }
+    /* ---------- login ---------- */
+    .auth{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem;
+      background:radial-gradient(circle at 20% 10%,#1d5fa8 0,transparent 40%),linear-gradient(135deg,#071a30,#0a2540 50%,#0f766e)}
+    .auth-card{background:#fff;width:100%;max-width:460px;border-radius:18px;padding:2rem;box-shadow:0 25px 60px rgba(0,0,0,.35)}
+    .auth-head{text-align:center;border-bottom:1px solid var(--line);padding-bottom:1rem;margin-bottom:1.3rem}
+    .auth-logo{width:62px;height:62px;border-radius:50%;background:linear-gradient(135deg,var(--navy),var(--teal));color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.7rem;margin:0 auto .6rem}
+    .auth-head small{color:var(--teal);font-weight:700}
+    .auth-head h1{font-size:1.1rem;color:var(--navy);margin:.2rem 0;font-weight:800}
+    .pill-date{display:inline-block;background:#e8f1f8;color:var(--blue);padding:.2rem .7rem;border-radius:99px;font-size:.8rem;font-weight:700;margin-top:.3rem}
+    .err{background:var(--bad-bg);color:var(--bad);border:1px solid #fecaca;padding:.6rem .8rem;border-radius:8px;font-size:.85rem;font-weight:700;display:none}
+    .err.show{display:block}
 
-    .app-shell { display: none; min-height: 100vh; }
-    .app-shell.active { display: flex; }
-    .sidebar { width: var(--sidebar-w); background: linear-gradient(180deg, var(--primary) 0%, var(--primary-dark) 100%); color: #fff;
-      display: flex; flex-direction: column; position: fixed; top: 0; right: 0; bottom: 0; z-index: 100; transition: transform .3s ease; }
-    .brand { padding: 1.25rem 1.1rem; border-bottom: 1px solid rgba(255,255,255,.15); }
-    .brand-title { font-size: .96rem; font-weight: 800; line-height: 1.45; }
-    .brand-sub { font-size: .76rem; color: #bae6fd; margin-top: .25rem; }
-    .user-box { margin: .85rem; padding: .75rem; background: rgba(255,255,255,.1); border-radius: 10px; font-size: .82rem; }
-    .user-role-badge { display: inline-block; padding: .15rem .55rem; border-radius: 6px; font-size: .74rem; font-weight: 700; margin-top: .3rem; background: #fbbf24; color: #1e293b; }
-    .user-role-badge.eng { background: #34d399; color: #064e3b; }
-    .nav-list { list-style: none; padding: .5rem .75rem; flex: 1; display: flex; flex-direction: column; gap: .4rem; overflow-y: auto; }
-    .nav-btn { width: 100%; background: transparent; border: none; color: #e2e8f0; padding: .8rem .95rem; border-radius: 10px; text-align: right;
-      font-size: .9rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: .65rem; transition: .2s; }
-    .nav-btn:hover { background: rgba(255,255,255,.12); color: #fff; }
-    .nav-btn.active { background: #fff; color: var(--primary-dark); box-shadow: 0 4px 12px rgba(0,0,0,.18); }
-    .sidebar-footer { padding: .9rem 1rem; border-top: 1px solid rgba(255,255,255,.15); }
+    /* ---------- layout ---------- */
+    .app{display:none;min-height:100vh}
+    .app.on{display:block}
+    .sidebar{position:fixed;top:0;right:0;bottom:0;width:var(--side);background:linear-gradient(180deg,var(--navy) 0%,#071a30 100%);color:#fff;display:flex;flex-direction:column;z-index:200;transition:transform .3s}
+    .brand{padding:1.2rem 1.1rem;border-bottom:1px solid rgba(255,255,255,.12);display:flex;gap:.7rem;align-items:center}
+    .brand-ico{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--teal),var(--blue));display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex:none}
+    .brand b{font-size:.9rem;line-height:1.4;display:block}
+    .brand span{font-size:.72rem;color:#9cc3e6}
+    .ubox{margin:.9rem;padding:.8rem;background:rgba(255,255,255,.08);border-radius:12px;font-size:.82rem}
+    .role{display:inline-block;margin-top:.35rem;padding:.12rem .55rem;border-radius:6px;font-size:.72rem;font-weight:800;background:#fbbf24;color:#1e293b}
+    .role.eng{background:#34d399;color:#064e3b}
+    nav.menu{flex:1;overflow-y:auto;padding:.3rem .8rem;display:flex;flex-direction:column;gap:.3rem}
+    .menu-label{font-size:.7rem;color:#7fa6cc;margin:.7rem .4rem .2rem;font-weight:700}
+    .menu a{display:flex;align-items:center;gap:.7rem;padding:.7rem .9rem;border-radius:10px;color:#d6e4f2;font-size:.9rem;font-weight:600;transition:.2s}
+    .menu a i{width:20px;text-align:center;color:#7fc8c0}
+    .menu a:hover{background:rgba(255,255,255,.1);color:#fff}
+    .menu a.active{background:#fff;color:var(--navy);box-shadow:0 6px 16px rgba(0,0,0,.25)}
+    .menu a.active i{color:var(--teal)}
+    .side-foot{padding:.9rem;border-top:1px solid rgba(255,255,255,.12)}
+    .main{margin-right:var(--side);min-width:0}
+    .topbar{position:sticky;top:0;z-index:100;background:#fff;border-bottom:3px solid var(--teal);padding:.75rem 1.4rem;display:flex;align-items:center;justify-content:space-between;gap:.8rem;flex-wrap:wrap}
+    .topbar h2{font-size:1.05rem;color:var(--navy);font-weight:800}
+    .topbar .sub{font-size:.8rem;color:var(--muted);font-weight:600}
+    .tb-actions{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+    .badge{padding:.28rem .75rem;border-radius:99px;font-size:.76rem;font-weight:800}
+    .b-cloud{background:var(--ok-bg);color:var(--ok)} .b-local{background:var(--warn-bg);color:var(--warn)}
+    .menu-btn{display:none;background:#e8f1f8;color:var(--navy);border:none;border-radius:8px;padding:.45rem .75rem;font-size:1.15rem;cursor:pointer}
+    #view{padding:1.4rem;max-width:1450px;margin:0 auto}
+    .page-head{margin-bottom:1.1rem}
+    .page-head h1{font-size:1.4rem;color:var(--navy);font-weight:800}
+    .page-head p{color:var(--muted);font-size:.9rem}
 
-    .main-wrapper { flex: 1; margin-right: var(--sidebar-w); display: flex; flex-direction: column; min-width: 0; }
-    .official-banner { background: var(--surface); border-bottom: 2px solid var(--primary); padding: .85rem 1.5rem; display: flex; align-items: center;
-      justify-content: space-between; flex-wrap: wrap; gap: .75rem; position: sticky; top: 0; z-index: 50; }
-    .banner-info h2 { font-size: 1.12rem; font-weight: 800; color: var(--primary-dark); }
-    .banner-meta { font-size: .84rem; color: var(--muted); font-weight: 600; }
-    .banner-actions { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
-    .status-badge { padding: .3rem .75rem; border-radius: 999px; font-size: .78rem; font-weight: 700; }
-    .status-cloud { background: var(--success-bg); color: var(--success); }
-    .status-local { background: var(--warning-bg); color: var(--warning); }
-    .content { padding: 1.4rem; max-width: 1380px; width: 100%; margin: 0 auto; }
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1.25rem; box-shadow: 0 2px 10px rgba(15,23,42,.04); }
-    .card-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .6rem; margin-bottom: 1rem; padding-bottom: .65rem; border-bottom: 1px solid var(--border); }
-    .card-title { font-size: 1.02rem; font-weight: 800; color: var(--primary); }
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:1.2rem;margin-bottom:1.2rem;box-shadow:0 2px 10px rgba(15,23,42,.04)}
+    .card-h{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.6rem;margin-bottom:1rem;padding-bottom:.65rem;border-bottom:1px solid var(--line)}
+    .card-h h3{font-size:1rem;color:var(--navy);font-weight:800;display:flex;gap:.5rem;align-items:center}
+    .card-h h3 i{color:var(--teal)}
+    .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-bottom:1.2rem}
+    .kpi{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1rem 1.1rem;display:flex;gap:.9rem;align-items:center}
+    .kpi .ic{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex:none}
+    .ic.blue{background:#dbeafe;color:var(--blue)} .ic.teal{background:#ccfbf1;color:var(--teal)} .ic.amber{background:#fef3c7;color:var(--warn)} .ic.green{background:#dcfce7;color:var(--ok)}
+    .kpi .l{font-size:.78rem;color:var(--muted);font-weight:700}
+    .kpi .v{font-size:1.45rem;font-weight:800;color:var(--navy);line-height:1.2}
+    .kpi .s{font-size:.72rem;color:var(--muted)}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem}
+    .grid-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:.85rem}
+    .fg{display:flex;flex-direction:column;gap:.3rem}
+    .fg.full{grid-column:1/-1}
+    label{font-size:.82rem;font-weight:700}
+    input,select,textarea{padding:.55rem .75rem;border:1px solid var(--line);border-radius:8px;font-size:.9rem;background:#fff;color:var(--text);width:100%}
+    input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(29,95,168,.14)}
+    input[readonly]{background:#eef6fb;font-weight:800;color:var(--navy)}
+    input[type=range]{padding:0;accent-color:var(--teal)}
+    .btn{padding:.55rem 1rem;border-radius:8px;border:none;font-size:.86rem;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:.45rem;transition:.2s;width:auto}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
+    .btn-p{background:var(--navy2);color:#fff}.btn-p:hover{background:var(--navy)}
+    .btn-t{background:var(--teal);color:#fff}.btn-t:hover{background:var(--teal-h)}
+    .btn-o{background:#fff;color:var(--navy2);border:1px solid var(--line)}.btn-o:hover{background:#eef4fa}
+    .btn-d{background:var(--bad-bg);color:var(--bad);padding:.35rem .65rem;font-size:.78rem}
+    .btn-sm{padding:.35rem .7rem;font-size:.8rem}
+    .wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+    table.t{width:100%;border-collapse:collapse;font-size:.85rem;background:#fff}
+    table.t th,table.t td{border-bottom:1px solid var(--line);border-left:1px solid #edf1f6;padding:.5rem .65rem;text-align:right;white-space:nowrap}
+    table.t th{background:var(--navy2);color:#fff;font-weight:800;position:sticky;top:0}
+    table.t tbody tr:nth-child(even) td{background:#f8fafc}
+    table.t tbody tr:hover td{background:#eaf3fb}
+    .ci{width:100%;min-width:90px;padding:.3rem .45rem;border:1px solid transparent;background:transparent;border-radius:5px;font-size:.85rem;font-weight:600}
+    .ci:hover{border-color:var(--line)} .ci:focus{background:#fff;border-color:var(--blue)}
+    .pill{padding:.18rem .6rem;border-radius:99px;font-size:.75rem;font-weight:800;display:inline-block}
+    .p-ok{background:var(--ok-bg);color:var(--ok)}.p-wr{background:var(--warn-bg);color:var(--warn)}.p-bd{background:var(--bad-bg);color:var(--bad)}
+    .bar{height:9px;background:#e2e8f0;border-radius:99px;overflow:hidden;min-width:90px}
+    .bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--teal),#34d399)}
+    .filters{display:flex;gap:.7rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:.9rem}
+    .filters .fg{min-width:150px}
+    .map{height:430px;border-radius:10px;z-index:1;border:1px solid var(--line)}
+    .map.sm{height:320px}
+    .legend{display:flex;gap:1rem;flex-wrap:wrap;font-size:.8rem;margin-top:.6rem;color:var(--muted);font-weight:700}
+    .legend span::before{content:"";display:inline-block;width:11px;height:11px;border-radius:50%;margin-left:.35rem;background:var(--c)}
+    .res-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.8rem;margin-top:1rem}
+    .res{background:#f1f7fc;border:1px solid var(--line);border-radius:10px;padding:.8rem;text-align:center}
+    .res b{display:block;font-size:1.3rem;color:var(--navy)} .res span{font-size:.76rem;color:var(--muted);font-weight:700}
+    .res.big{background:linear-gradient(135deg,var(--navy2),var(--teal));color:#fff;border:none}.res.big b,.res.big span{color:#fff}
+    .note{background:#fffbeb;border:1px solid #fde68a;color:#78350f;padding:.6rem .8rem;border-radius:8px;font-size:.82rem;margin-bottom:.9rem}
+    .rpt-box{background:#fff;border:1px solid var(--line);border-radius:10px;padding:1.5rem;overflow-x:auto}
+    .toast{position:fixed;bottom:20px;left:20px;background:var(--navy);color:#fff;padding:.75rem 1.2rem;border-radius:10px;font-size:.88rem;box-shadow:0 8px 20px rgba(0,0,0,.25);opacity:0;pointer-events:none;transform:translateY(15px);transition:.25s;z-index:9999}
+    .toast.show{opacity:1;transform:none}
+    .empty{text-align:center;color:var(--muted);padding:1.6rem}
 
-    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; margin-bottom: 1.25rem; }
-    .kpi-card { background: var(--surface); border: 1px solid var(--border); border-right: 4px solid var(--primary); border-radius: var(--radius); padding: 1rem 1.1rem; }
-    .kpi-card.accent { border-right-color: var(--accent); }
-    .kpi-card.success { border-right-color: var(--success); }
-    .kpi-card.warning { border-right-color: var(--warning); }
-    .kpi-label { font-size: .82rem; color: var(--muted); font-weight: 700; }
-    .kpi-value { font-size: 1.55rem; font-weight: 800; color: var(--primary-dark); margin-top: .2rem; }
-    .kpi-sub { font-size: .76rem; color: var(--muted); margin-top: .2rem; }
-
-    .grid-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(195px, 1fr)); gap: .85rem; }
-    .form-group { display: flex; flex-direction: column; gap: .3rem; }
-    .form-group.full { grid-column: 1 / -1; }
-    label { font-size: .83rem; font-weight: 700; color: var(--text); }
-    input, select, textarea { padding: .56rem .75rem; border: 1px solid var(--border); border-radius: 8px; font-size: .9rem; background: #fff; color: var(--text); }
-    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(11,74,125,.12); }
-
-    .btn { padding: .55rem .95rem; border-radius: 8px; border: none; font-size: .86rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: .4rem; transition: .2s; }
-    .btn:disabled { opacity: .6; cursor: not-allowed; }
-    .btn-primary { background: var(--primary); color: #fff; }
-    .btn-primary:hover { background: var(--primary-dark); }
-    .btn-accent { background: var(--accent); color: #fff; }
-    .btn-accent:hover { background: var(--accent-hover); }
-    .btn-outline { background: #fff; color: var(--primary); border: 1px solid var(--border); }
-    .btn-outline:hover { background: var(--primary-light); }
-    .btn-danger { background: var(--danger-bg); color: var(--danger); padding: .35rem .6rem; font-size: .78rem; }
-    .btn-sm { padding: .35rem .65rem; font-size: .8rem; }
-
-    .excel-wrap { overflow-x: auto; border: 1px solid #94a3b8; border-radius: 8px; }
-    table.excel-table { width: 100%; border-collapse: collapse; font-size: .86rem; background: #fff; }
-    table.excel-table th, table.excel-table td { border: 1px solid #cbd5e1; padding: .45rem .6rem; text-align: right; white-space: nowrap; }
-    table.excel-table th { background: #dbeafe; color: var(--primary-dark); font-weight: 800; position: sticky; top: 0; }
-    table.excel-table tr:nth-child(even) td { background: #f8fafc; }
-    table.excel-table tr:hover td { background: #eff6ff; }
-    .cell-input { width: 100%; min-width: 95px; padding: .32rem .45rem; border: 1px solid transparent; background: transparent; border-radius: 4px; font-size: .86rem; font-weight: 600; }
-    .cell-input:focus { background: #fff; border-color: var(--primary); }
-    .pill { padding: .2rem .55rem; border-radius: 999px; font-size: .76rem; font-weight: 700; }
-    .pill-done { background: var(--success-bg); color: var(--success); }
-    .pill-prog { background: var(--warning-bg); color: var(--warning); }
-    .pill-need { background: var(--danger-bg); color: var(--danger); }
-
-    .toast { position: fixed; bottom: 20px; left: 20px; background: var(--primary-dark); color: #fff; padding: .75rem 1.2rem; border-radius: 10px; font-size: .88rem;
-      box-shadow: 0 8px 20px rgba(0,0,0,.25); opacity: 0; pointer-events: none; transform: translateY(15px); transition: .25s; z-index: 999; }
-    .toast.show { opacity: 1; transform: translateY(0); }
-    .menu-toggle { display: none; background: var(--primary-light); color: var(--primary); border: none; border-radius: 8px; padding: .45rem .75rem; font-size: 1.2rem; cursor: pointer; }
-    .memo-area { width: 100%; min-height: 380px; line-height: 1.9; font-size: .95rem; resize: vertical; }
-
-    @media print {
-      .sidebar, .official-banner .banner-actions, .no-print { display: none !important; }
-      .main-wrapper { margin-right: 0 !important; }
-      body { background: #fff; }
-      .card { box-shadow: none; border: 1px solid #000; }
+    @media(max-width:900px){
+      .sidebar{transform:translateX(100%)} .sidebar.open{transform:none}
+      .main{margin-right:0} .menu-btn{display:inline-block} .grid2{grid-template-columns:1fr}
     }
-    @media (max-width: 880px) {
-      .sidebar { transform: translateX(100%); }
-      .sidebar.open { transform: translateX(0); }
-      .main-wrapper { margin-right: 0; }
-      .menu-toggle { display: inline-block; }
-    }
+    @media print{.sidebar,.topbar,.no-print{display:none!important}.main{margin-right:0}body{background:#fff}}
   </style>
 </head>
 <body>
 
-  <!-- شاشة تسجيل الدخول -->
-  <div class="auth-screen" id="authScreen">
-    <div class="auth-card">
-      <div class="auth-header">
-        <div class="ministry">وزارة الموارد المائية والري</div>
-        <h1>الإدارة العامة للموارد المائية والري بجنوب الوادي بتوشكى</h1>
-        <div class="date-pill" id="loginDateDisplay"></div>
+<!-- ================= تسجيل الدخول ================= -->
+<div class="auth" id="authScreen">
+  <div class="auth-card">
+    <div class="auth-head">
+      <div class="auth-logo"><i class="fas fa-water"></i></div>
+      <small>وزارة الموارد المائية والري</small>
+      <h1>الإدارة العامة للموارد المائية والري بجنوب الوادي بتوشكى</h1>
+      <div class="pill-date" id="loginDate"></div>
+    </div>
+    <form id="loginForm" style="display:flex;flex-direction:column;gap:.9rem" novalidate>
+      <div class="fg"><label for="loginEmail">البريد الإلكتروني</label>
+        <input type="email" id="loginEmail" autocomplete="username" placeholder="admin@toshka.gov.eg" /></div>
+      <div class="fg"><label for="loginPassword">كلمة المرور</label>
+        <input type="password" id="loginPassword" autocomplete="current-password" placeholder="••••••••" /></div>
+      <div class="err" id="loginError"></div>
+      <button type="submit" id="loginBtn" class="btn btn-p" style="padding:.75rem;width:100%"><i class="fas fa-lock"></i> تسجيل الدخول</button>
+    </form>
+    <div id="demoBox" style="margin-top:1.1rem;padding-top:.9rem;border-top:1px dashed var(--line);font-size:.82rem;color:var(--muted)">
+      <div style="font-weight:800;color:var(--navy);margin-bottom:.4rem">دخول تجريبي سريع:</div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+        <button type="button" class="btn btn-o btn-sm" id="demoAdminBtn"><i class="fas fa-crown"></i> أدمن الإدارة</button>
+        <button type="button" class="btn btn-o btn-sm" id="demoEngBtn"><i class="fas fa-hard-hat"></i> مهندس فرع 4</button>
       </div>
-
-      <form id="loginForm" style="display:flex; flex-direction:column; gap:0.9rem;" novalidate>
-        <div class="form-group">
-          <label for="loginEmail">البريد الإلكتروني</label>
-          <input type="email" id="loginEmail" autocomplete="username" placeholder="admin@toshka.gov.eg" />
-        </div>
-        <div class="form-group">
-          <label for="loginPassword">كلمة المرور</label>
-          <input type="password" id="loginPassword" autocomplete="current-password" placeholder="••••••••" />
-        </div>
-        <div class="error-msg" id="loginError"></div>
-        <button type="submit" id="loginBtn" class="btn btn-primary" style="padding:0.75rem;">🔐 تسجيل الدخول إلى المنصة</button>
-      </form>
-
-      <div id="demoBox" style="margin-top:1.1rem; padding-top:0.9rem; border-top:1px dashed var(--border); font-size:0.82rem; color:var(--muted);">
-        <div style="font-weight:700; color:var(--primary-dark); margin-bottom:0.4rem;">دخول تجريبي سريع (للمعاينة الفورية):</div>
-        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
-          <button type="button" class="btn btn-outline btn-sm" id="demoAdminBtn">👑 دخول كـ أدمن الإدارة</button>
-          <button type="button" class="btn btn-outline btn-sm" id="demoEngBtn">👷 دخول كـ مهندس فرع 4</button>
-        </div>
-        <div style="margin-top:.5rem;">حسابات محلية: <b>admin@toshka.gov.eg</b> أو <b>branch4@toshka.gov.eg</b> — كلمة المرور <b>123456</b></div>
-      </div>
+      <div style="margin-top:.5rem">حسابات محلية: <b>admin@toshka.gov.eg</b> / <b>branch4@toshka.gov.eg</b> — كلمة المرور <b>123456</b></div>
     </div>
   </div>
+</div>
 
-  <!-- واجهة المنصة -->
-  <div class="app-shell" id="appShell">
-    <aside class="sidebar" id="sidebar">
-      <div class="brand">
-        <div class="brand-title">الإدارة العامة للموارد المائية والري بجنوب الوادي بتوشكى</div>
-        <div class="brand-sub">منظومة المتابعة الميدانية والتصرفات</div>
-      </div>
-      <div class="user-box">
-        <div id="sidebarUserName" style="font-weight:700;">-</div>
-        <div id="sidebarUserZone" style="font-size:0.78rem; color:#e2e8f0;">-</div>
-        <span id="sidebarRoleBadge" class="user-role-badge">-</span>
-      </div>
-      <ul class="nav-list" id="navList"></ul>
-      <div class="sidebar-footer">
-        <button class="btn btn-danger" id="logoutBtn" style="width:100%; justify-content:center;">🚪 تسجيل الخروج</button>
-      </div>
-    </aside>
-
-    <div class="main-wrapper">
-      <header class="official-banner">
-        <div style="display:flex; align-items:center; gap:0.75rem;">
-          <button class="menu-toggle" id="menuToggle">☰</button>
-          <div class="banner-info">
-            <h2>الإدارة العامة للموارد المائية والري بجنوب الوادي بتوشكى</h2>
-            <div class="banner-meta" id="bannerDateText"></div>
-          </div>
-        </div>
-        <div class="banner-actions">
-          <span id="connStatus" class="status-badge status-local">وضع محلي (localStorage)</span>
-          <button class="btn btn-accent btn-sm" id="exportExcelBtn">📊 تصدير شيت Excel</button>
-          <button class="btn btn-outline btn-sm" id="exportJsonBtn">💾 نسخ احتياطي JSON</button>
-        </div>
-      </header>
-      <main class="content" id="mainContent"></main>
+<!-- ================= المنصة ================= -->
+<div class="app" id="appShell">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-ico"><i class="fas fa-water"></i></div>
+      <div><b>الري بجنوب الوادي - توشكى</b><span>منظومة المتابعة الميدانية</span></div>
     </div>
+    <div class="ubox">
+      <div id="sbName" style="font-weight:800">-</div>
+      <div id="sbZone" style="font-size:.76rem;color:#c3d6ea">-</div>
+      <span id="sbRole" class="role">-</span>
+    </div>
+    <nav class="menu" id="menu"></nav>
+    <div class="side-foot"><button class="btn btn-d" id="logoutBtn" style="width:100%"><i class="fas fa-right-from-bracket"></i> تسجيل الخروج</button></div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div style="display:flex;align-items:center;gap:.7rem">
+        <button class="menu-btn" id="menuBtn"><i class="fas fa-bars"></i></button>
+        <div>
+          <h2>الإدارة العامة للموارد المائية والري بجنوب الوادي بتوشكى</h2>
+          <div class="sub" id="topDate"></div>
+        </div>
+      </div>
+      <div class="tb-actions">
+        <span id="connBadge" class="badge b-local">وضع محلي</span>
+        <button class="btn btn-t btn-sm" id="exportXlsBtn"><i class="fas fa-file-excel"></i> تصدير Excel</button>
+        <button class="btn btn-o btn-sm" id="exportJsonBtn"><i class="fas fa-database"></i> نسخة احتياطية</button>
+      </div>
+    </header>
+    <main id="view"></main>
   </div>
+</div>
 
-  <div class="toast" id="toast"></div>
+<div class="toast" id="toast"></div>
 
-  <script>
-  "use strict";
-  // ===================================================================
-  // 1. الإعدادات
-  // ===================================================================
-  const firebaseConfig = {
-    apiKey: "AIzaSyBG7ldaL6toYCkzBRWZInT5GnwXKuBEtoQ",
-    authDomain: "data-cc6b1.firebaseapp.com",
-    projectId: "data-cc6b1",
-    storageBucket: "data-cc6b1.firebasestorage.app",
-    messagingSenderId: "766137137911",
-    appId: "1:766137137911:web:262aca159dd8d14a14f1f2",
-    measurementId: "G-ZYBRQ5FH2K"
+<script>
+"use strict";
+// =====================================================================
+// 1. الإعدادات
+// =====================================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyBG7ldaL6toYCkzBRWZInT5GnwXKuBEtoQ",
+  authDomain: "data-cc6b1.firebaseapp.com",
+  projectId: "data-cc6b1",
+  storageBucket: "data-cc6b1.firebasestorage.app",
+  messagingSenderId: "766137137911",
+  appId: "1:766137137911:web:262aca159dd8d14a14f1f2",
+  measurementId: "G-ZYBRQ5FH2K"
+};
+const MASTER_ADMIN_EMAIL = "admin@toshka.gov.eg";
+const ENABLE_DEMO_LOGIN = true;   // اجعلها false عند الإطلاق الفعلي (تخفي الدخول التجريبي والبيانات الافتراضية)
+const MAP_CENTER = [22.7, 31.5];  // مركز خريطة توشكى الافتراضي
+
+const ZONES = ["جميع المناطق (الإدارة العامة)","هندسة القناة الرئيسية (الشيخ زايد)","هندسة فرع 1","هندسة فرع 2","هندسة فرع 3","هندسة فرع 4"];
+const REAL_ZONES = ZONES.slice(1);
+
+// =====================================================================
+// 2. أدوات
+// =====================================================================
+const $ = (id) => document.getElementById(id);
+const num = (v, d = 0) => { const n = parseFloat(v); return isNaN(n) ? d : n; };
+const fx = (v, d = 2) => num(v).toFixed(d);
+function arDate() { return new Date().toLocaleDateString("ar-EG", { weekday: "long", year: "numeric", month: "long", day: "numeric" }); }
+function todayISO() { const d = new Date(), p = (n) => String(n).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; }
+function toast(msg) { const el = $("toast"); el.textContent = msg; el.classList.add("show"); clearTimeout(window._tt); window._tt = setTimeout(() => el.classList.remove("show"), 3200); }
+function esc(s) { return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
+function nl2br(s) { return esc(s).replace(/\n/g, "<br>"); }
+const isLocalId = (id) => String(id).includes("_");
+
+async function hashPw(p) {
+  try { if (window.crypto && crypto.subtle) {
+    const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("toshka:" + p));
+    return Array.from(new Uint8Array(b)).map((x) => x.toString(16).padStart(2, "0")).join("");
+  } } catch (e) {}
+  return "plain:" + p;
+}
+async function pwMatches(u, p) { return !!u.pwHash && (u.pwHash === (await hashPw(p)) || u.pwHash === "plain:" + p); }
+
+function authErr(err) {
+  const c = err && err.code ? err.code : "";
+  const m = {
+    "auth/invalid-credential": "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
+    "auth/wrong-password": "كلمة المرور غير صحيحة.",
+    "auth/user-not-found": "هذا البريد غير مسجل.",
+    "auth/invalid-email": "صيغة البريد الإلكتروني غير صحيحة.",
+    "auth/user-disabled": "هذا الحساب موقوف.",
+    "auth/too-many-requests": "محاولات كثيرة، انتظر قليلاً ثم أعد المحاولة.",
+    "auth/network-request-failed": "تعذر الاتصال بالإنترنت/Firebase.",
+    "auth/operation-not-allowed": "تسجيل الدخول بالبريد وكلمة المرور غير مفعّل في Firebase (Authentication ← Sign-in method).",
+    "auth/unauthorized-domain": "هذا النطاق غير مصرح به في Firebase (Authentication ← Settings ← Authorized domains).",
+    "auth/email-already-in-use": "هذا البريد مسجل بالفعل."
   };
+  if (m[c]) return `${m[c]} (${c})`;
+  return c ? `تعذر تسجيل الدخول (${c}).` : "البريد الإلكتروني أو كلمة المرور غير صحيحة.";
+}
 
-  const MASTER_ADMIN_EMAIL = "admin@toshka.gov.eg";
-  // ضع false لإخفاء الدخول التجريبي والحسابات الافتراضية عند الإطلاق الفعلي
-  const ENABLE_DEMO_LOGIN = true;
+// =====================================================================
+// 3. المعادلات الهيدروليكية
+// =====================================================================
+// منحنى المعايرة: Q = C * (H - H0)^n ، الحجم اليومي (ألف م³) = Q * 86.4
+function calcRec(r) {
+  const H = num(r.level, NaN), C = num(r.coefC, 12.5), H0 = num(r.datumH0, 0), N = num(r.expN, 1.5);
+  const q = isNaN(H) || H <= H0 ? 0 : C * Math.pow(H - H0, N);
+  r.dischargeCms = Number(q.toFixed(3));
+  r.dailyVolumeK = Number((q * 86.4).toFixed(2));
+  return r;
+}
+// التطهير: الحالة تُشتق من نسبة الإنجاز
+function calcClean(r) {
+  r.progress = Math.max(0, Math.min(100, Math.round(num(r.progress))));
+  r.status = r.progress >= 100 ? "مكتمل" : r.progress <= 0 ? "لم يبدأ" : "جاري التطهير";
+  r.lengthKm = Number(Math.abs(num(r.kmTo) - num(r.kmFrom)).toFixed(2));
+  return r;
+}
+// معادلة مانينج لقناة شبه منحرفة
+function manning(b, y, m, S, n) {
+  const A = (b + m * y) * y, P = b + 2 * y * Math.sqrt(1 + m * m), R = P > 0 ? A / P : 0;
+  const Q = n > 0 ? (1 / n) * A * Math.pow(R, 2 / 3) * Math.sqrt(S) : 0;
+  const V = A > 0 ? Q / A : 0, T = b + 2 * m * y;
+  const Fr = A > 0 && T > 0 ? V / Math.sqrt(9.81 * A / T) : 0;
+  return { A, P, R, Q, V, Fr, T };
+}
+const stColor = (p) => (p >= 100 ? "#15803d" : p <= 0 ? "#b91c1c" : "#d97706");
+const stPill = (p) => (p >= 100 ? "p-ok" : p <= 0 ? "p-bd" : "p-wr");
 
-  const ZONES = [
-    "جميع المناطق (الإدارة العامة)",
-    "هندسة القناة الرئيسية (الشيخ زايد)",
-    "هندسة فرع 1",
-    "هندسة فرع 2",
-    "هندسة فرع 3",
-    "هندسة فرع 4"
-  ];
-  const CLEAN_OPTIONS = ["مطهرة بالكامل", "جاري التطهير", "تحتاج تطهير"];
+// أحدث قراءة لكل موقع
+function latestRecords(rows) {
+  const m = new Map();
+  rows.forEach((r) => {
+    const k = r.zone + "|" + r.canalName, p = m.get(k);
+    if (!p || r.date > p.date || (r.date === p.date && (r.updatedAtMs || 0) > (p.updatedAtMs || 0))) m.set(k, r);
+  });
+  return [...m.values()];
+}
+function cleanStats(list) {
+  const total = list.length, len = list.reduce((s, c) => s + num(c.lengthKm), 0);
+  const prog = len > 0 ? list.reduce((s, c) => s + num(c.lengthKm) * num(c.progress), 0) / len
+    : total ? list.reduce((s, c) => s + num(c.progress), 0) / total : 0;
+  return { total, len, prog: Math.round(prog),
+    done: list.filter((c) => c.progress >= 100).length,
+    run: list.filter((c) => c.progress > 0 && c.progress < 100).length,
+    none: list.filter((c) => c.progress <= 0).length };
+}
+function zoneSummary(latest, cleans) {
+  const zs = {};
+  const z = (n) => (zs[n] = zs[n] || { n: 0, q: 0, v: 0, l: 0, cl: [] });
+  latest.forEach((r) => { const o = z(r.zone); o.n++; o.q += num(r.dischargeCms); o.v += num(r.dailyVolumeK); o.l += num(r.level); });
+  cleans.forEach((c) => z(c.zone).cl.push(c));
+  return zs;
+}
 
-  // ===================================================================
-  // 2. أدوات مساعدة
-  // ===================================================================
-  const $ = (id) => document.getElementById(id);
+// =====================================================================
+// 4. التخزين (Firestore + localStorage)
+// =====================================================================
+class Store {
+  constructor(sys, cloudName, key, compute) { this.sys = sys; this.cloud = cloudName; this.key = key; this.compute = compute; this.items = sys._loadLocal(key, null); this.unsub = null; }
+  visible() { const u = this.sys.currentUser; if (!u) return []; return u.role === "admin" ? this.items : this.items.filter((r) => r.zone === u.zone); }
+  _save() { this.sys._saveLocal(this.key, this.items); }
+  _online() { return this.sys.isCloud && this.sys.db && this.sys.auth && this.sys.auth.currentUser; }
+  bind() {
+    this.unbind();
+    if (!this._online() || !this.sys.currentUser) return;
+    let q = this.sys.db.collection(this.cloud);
+    if (this.sys.currentUser.role !== "admin") q = q.where("zone", "==", this.sys.currentUser.zone);
+    this.unsub = q.onSnapshot((snap) => {
+      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      list.sort((a, b) => (b.updatedAtMs || 0) - (a.updatedAtMs || 0));
+      this.items = list; this._save(); this.sys._notify();
+    }, (e) => console.warn(this.cloud, e.message));
+  }
+  unbind() { if (this.unsub) { this.unsub(); this.unsub = null; } }
+  async add(obj) {
+    const e = this.compute({ ...obj }); e.updatedBy = this.sys.currentUser.email; e.updatedAtMs = Date.now();
+    this.items = [{ id: "loc_" + Date.now() + "_" + Math.random().toString(36).slice(2, 5), ...e }, ...(this.items || [])];
+    this._save(); this.sys._notify();
+    if (this._online()) { try { await this.sys.db.collection(this.cloud).add(e); } catch (x) { console.warn(x.message); toast("تم الحفظ محلياً فقط (تعذر الرفع السحابي)"); } }
+  }
+  async update(id, patch) {
+    this.items = this.items.map((r) => r.id !== id ? r : this.compute({ ...r, ...patch, updatedBy: this.sys.currentUser.email, updatedAtMs: Date.now() }));
+    this._save(); this.sys._notify();
+    const t = this.items.find((r) => r.id === id);
+    if (this._online() && t && !isLocalId(id)) { try { const { id: _i, ...p } = t; await this.sys.db.collection(this.cloud).doc(id).update(p); } catch (x) { console.warn(x.message); } }
+  }
+  async remove(id) {
+    this.items = this.items.filter((r) => r.id !== id); this._save(); this.sys._notify();
+    if (this._online() && !isLocalId(id)) { try { await this.sys.db.collection(this.cloud).doc(id).delete(); } catch (x) {} }
+  }
+}
 
-  function getArabicDateFull() {
-    return new Date().toLocaleDateString("ar-EG", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+// =====================================================================
+// 5. النظام والمصادقة
+// =====================================================================
+class System {
+  constructor() {
+    this.isCloud = false; this.auth = null; this.db = null; this.secondaryApp = null; this.currentUser = null;
+    this.users = this._loadLocal("users", []); this.listeners = []; this.unsubUsers = null;
+    this.records = new Store(this, "toshka_field_records", "records", calcRec);
+    this.cleanings = new Store(this, "toshka_cleanings", "cleanings", calcClean);
   }
-  function getTodayISO() {
-    const d = new Date();
-    const p = (n) => String(n).padStart(2, "0");
-    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  _loadLocal(k, f) { try { const r = localStorage.getItem("toshka_sys_" + k); return r ? JSON.parse(r) : f; } catch (e) { return f; } }
+  _saveLocal(k, v) { try { localStorage.setItem("toshka_sys_" + k, JSON.stringify(v)); } catch (e) {} }
+  subscribe(fn) { this.listeners.push(fn); }
+  _notify() { this.listeners.forEach((f) => f()); }
+
+  async init() {
+    for (const u of this.users) { if (u.passwordHint && !u.pwHash) u.pwHash = await hashPw(u.passwordHint); delete u.passwordHint; }
+    if (ENABLE_DEMO_LOGIN && !this.users.some((u) => u.email === MASTER_ADMIN_EMAIL)) {
+      const h = await hashPw("123456");
+      this.users.unshift(
+        { uid: "demo_admin", name: "مدير عام الإدارة (أدمن)", email: MASTER_ADMIN_EMAIL, pwHash: h, role: "admin", zone: ZONES[0] },
+        { uid: "demo_eng_4", name: "مهندس منطقة فرع 4", email: "branch4@toshka.gov.eg", pwHash: h, role: "user", zone: "هندسة فرع 4" });
+    }
+    const t = todayISO();
+    if (this.records.items === null) {
+      this.records.items = ENABLE_DEMO_LOGIN ? [
+        calcRec({ id: "loc_r1", date: t, zone: REAL_ZONES[0], canalName: "فم ترعة الشيخ زايد الرئيسية", level: 178.40, coefC: 14.2, datumH0: 175.0, expN: 1.5, notes: "بيانات تجريبية", updatedBy: MASTER_ADMIN_EMAIL, updatedAtMs: Date.now() }),
+        calcRec({ id: "loc_r2", date: t, zone: "هندسة فرع 4", canalName: "مأخذ دليل فرع 4", level: 177.85, coefC: 8.5, datumH0: 175.0, expN: 1.5, notes: "بيانات تجريبية", updatedBy: "branch4@toshka.gov.eg", updatedAtMs: Date.now() })
+      ] : [];
+    }
+    // ترحيل السجلات القديمة (قبل إضافة حقل التاريخ/الأس)
+    this.records.items = this.records.items.map((r) => ({ date: t, expN: 1.5, ...r }));
+    if (this.cleanings.items === null) {
+      this.cleanings.items = ENABLE_DEMO_LOGIN ? [
+        calcClean({ id: "loc_c1", zone: "هندسة فرع 1", name: "ترعة فرع 1 - كم 0 إلى كم 15", kmFrom: 0, kmTo: 15, lat: 22.72, lng: 31.55, lat2: 22.80, lng2: 31.62, progress: 100, startDate: t, endDate: t, notes: "موقع تجريبي - عدّل الإحداثيات", updatedBy: MASTER_ADMIN_EMAIL, updatedAtMs: Date.now() }),
+        calcClean({ id: "loc_c2", zone: REAL_ZONES[0], name: "القناة الرئيسية - كم 20 إلى كم 32", kmFrom: 20, kmTo: 32, lat: 22.62, lng: 31.80, lat2: 22.66, lng2: 31.92, progress: 45, startDate: t, endDate: t, notes: "موقع تجريبي - عدّل الإحداثيات", updatedBy: MASTER_ADMIN_EMAIL, updatedAtMs: Date.now() }),
+        calcClean({ id: "loc_c3", zone: "هندسة فرع 4", name: "مأخذ دليل فرع 4 - كم 10 إلى كم 14", kmFrom: 10, kmTo: 14, lat: 22.55, lng: 31.40, progress: 0, startDate: t, endDate: t, notes: "موقع تجريبي - عدّل الإحداثيات", updatedBy: "branch4@toshka.gov.eg", updatedAtMs: Date.now() })
+      ] : [];
+    }
+    this.records._save(); this.cleanings._save(); this._saveLocal("users", this.users);
+    this.initFirebase();
   }
-  function showToast(msg) {
-    const el = $("toast");
-    el.textContent = msg;
-    el.classList.add("show");
-    clearTimeout(window._tTimer);
-    window._tTimer = setTimeout(() => el.classList.remove("show"), 3200);
-  }
-  function esc(str) {
-    return String(str ?? "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;");
-  }
-  async function hashPw(p) {
+
+  initFirebase() {
     try {
-      if (window.crypto && crypto.subtle) {
-        const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("toshka:" + p));
-        return Array.from(new Uint8Array(buf)).map((x) => x.toString(16).padStart(2, "0")).join("");
-      }
-    } catch (e) { /* fall through */ }
-    return "plain:" + p;
+      if (typeof firebase === "undefined") throw new Error("Firebase SDK not loaded");
+      if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+      this.auth = firebase.auth(); this.db = firebase.firestore(); this.isCloud = true; this._badge(true);
+      this.auth.onAuthStateChanged(async (fu) => { if (fu && !this.currentUser) { try { await this._resolveProfile(fu); } catch (e) { console.warn(e); } } });
+    } catch (e) { console.warn("Firebase غير متاح:", e.message); this.isCloud = false; this._badge(false); }
   }
-  async function pwMatches(user, password) {
-    if (!user.pwHash) return false;
-    return user.pwHash === (await hashPw(password)) || user.pwHash === "plain:" + password;
-  }
-  const isLocalId = (id) => String(id).includes("_"); // معرفات Firestore لا تحتوي "_"
+  _badge(on) { const el = $("connBadge"); el.className = "badge " + (on ? "b-cloud" : "b-local"); el.innerHTML = on ? '<i class="fas fa-cloud"></i> متصل بـ Firebase' : '<i class="fas fa-hard-drive"></i> وضع محلي'; }
 
-  function authErrorMessage(err) {
-    const code = err && err.code ? err.code : "";
-    const map = {
-      "auth/invalid-credential": "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
-      "auth/wrong-password": "كلمة المرور غير صحيحة.",
-      "auth/user-not-found": "هذا البريد غير مسجل.",
-      "auth/invalid-email": "صيغة البريد الإلكتروني غير صحيحة.",
-      "auth/user-disabled": "هذا الحساب موقوف.",
-      "auth/too-many-requests": "محاولات كثيرة. انتظر قليلاً ثم حاول مرة أخرى.",
-      "auth/network-request-failed": "تعذر الاتصال بالإنترنت/Firebase.",
-      "auth/operation-not-allowed": "تسجيل الدخول بالبريد وكلمة المرور غير مفعّل في Firebase (Authentication ← Sign-in method ← Email/Password).",
-      "auth/unauthorized-domain": "هذا النطاق غير مصرح به في Firebase (Authentication ← Settings ← Authorized domains).",
-      "auth/invalid-api-key": "مفتاح Firebase API غير صحيح.",
-      "auth/api-key-not-valid": "مفتاح Firebase API غير صحيح."
-    };
-    if (map[code]) return map[code] + ` (${code})`;
-    if (code) return `تعذر تسجيل الدخول (${code}).`;
-    return "البريد الإلكتروني أو كلمة المرور غير صحيحة.";
-  }
-
-  // ===================================================================
-  // 3. معادلة التصرف: Q = C * (H - H0)^n  |  الحجم اليومي (ألف م³) = Q * 86.4
-  // ===================================================================
-  function calculateDischargeFromLevel(level, c = 12.5, h0 = 175.0, n = 1.5) {
-    const H = parseFloat(level);
-    const C = isNaN(parseFloat(c)) ? 12.5 : parseFloat(c);
-    const H0 = isNaN(parseFloat(h0)) ? 0 : parseFloat(h0);
-    const N = isNaN(parseFloat(n)) ? 1.5 : parseFloat(n);
-    if (isNaN(H) || H <= H0) return { qCms: 0, dailyThousandM3: 0 };
-    const q = C * Math.pow(H - H0, N);
-    return { qCms: Number(q.toFixed(3)), dailyThousandM3: Number((q * 86.4).toFixed(2)) };
-  }
-
-  // ===================================================================
-  // 4. طبقة البيانات والصلاحيات
-  // ===================================================================
-  class ToshkaSystem {
-    constructor() {
-      this.isCloud = false;
-      this.auth = null;
-      this.db = null;
-      this.secondaryApp = null;
-      this.currentUser = null;
-      this.records = this._loadLocal("records", null);
-      this.users = this._loadLocal("users", []);
-      this.listeners = [];
-      this.unsubRecords = null;
-      this.unsubUsers = null;
+  async _resolveProfile(fu) {
+    const email = (fu.email || "").toLowerCase();
+    let p = this.users.find((u) => u.email.toLowerCase() === email);
+    if (this.isCloud && this.db) {
+      try { const s = await this.db.collection("toshka_users").doc(fu.uid).get(); if (s.exists) p = { uid: fu.uid, ...s.data() }; }
+      catch (e) { console.warn("تعذر جلب ملف المستخدم:", e.message); }
     }
-
-    async init() {
-      // ترحيل المستخدمين القدامى (كلمة مرور نصية) إلى هاش
-      for (const u of this.users) {
-        if (u.passwordHint && !u.pwHash) { u.pwHash = await hashPw(u.passwordHint); }
-        delete u.passwordHint;
-      }
-      if (ENABLE_DEMO_LOGIN && !this.users.some((u) => u.email === "admin@toshka.gov.eg")) {
-        const h = await hashPw("123456");
-        this.users.unshift(
-          { uid: "demo_admin", name: "مدير عام الإدارة (أدمن)", email: "admin@toshka.gov.eg", pwHash: h, role: "admin", zone: ZONES[0] },
-          { uid: "demo_eng_4", name: "مهندس منطقة فرع 4", email: "branch4@toshka.gov.eg", pwHash: h, role: "user", zone: "هندسة فرع 4" }
-        );
-      }
-      if (!this.records) this.records = ENABLE_DEMO_LOGIN ? this._seedRecords() : [];
-      this._saveLocal("users", this.users);
-      this._saveLocal("records", this.records);
-      this.initFirebase();
+    if (!p) {
+      const m = email === MASTER_ADMIN_EMAIL.toLowerCase();
+      p = { uid: fu.uid, email, name: m ? "مدير عام الإدارة (أدمن)" : email.split("@")[0], role: m ? "admin" : "user", zone: m ? ZONES[0] : "هندسة فرع 4" };
     }
-
-    _seedRecords() {
-      const today = getTodayISO();
-      const r1 = calculateDischargeFromLevel(178.40, 14.2, 175.0, 1.5);
-      const r2 = calculateDischargeFromLevel(177.85, 8.5, 175.0, 1.5);
-      return [
-        { id: "loc_1", date: today, zone: "هندسة القناة الرئيسية (الشيخ زايد)", canalName: "فم ترعة الشيخ زايد الرئيسية",
-          level: 178.40, coefC: 14.2, datumH0: 175.0, expN: 1.5, dischargeCms: r1.qCms, dailyVolumeK: r1.dailyThousandM3,
-          cleaningStatus: "مطهرة بالكامل", notes: "انتظام المناسيب والتصرفات خلف القنطرة", updatedBy: MASTER_ADMIN_EMAIL, updatedAtMs: Date.now() },
-        { id: "loc_2", date: today, zone: "هندسة فرع 4", canalName: "مأخذ دليل فرع 4",
-          level: 177.85, coefC: 8.5, datumH0: 175.0, expN: 1.5, dischargeCms: r2.qCms, dailyVolumeK: r2.dailyThousandM3,
-          cleaningStatus: "جاري التطهير", notes: "متابعة أعمال إزالة الحشائش بالكيلو 12", updatedBy: "branch4@toshka.gov.eg", updatedAtMs: Date.now() }
-      ];
+    this.currentUser = p; this._afterLogin();
+  }
+  _afterLogin() {
+    this.records.bind(); this.cleanings.bind();
+    if (this.currentUser.role === "admin" && this.isCloud && this.auth.currentUser) {
+      if (this.unsubUsers) this.unsubUsers();
+      this.unsubUsers = this.db.collection("toshka_users").onSnapshot((snap) => {
+        const cu = snap.docs.map((d) => ({ uid: d.id, ...d.data() }));
+        const lo = this.users.filter((u) => isLocalId(u.uid) && !cu.some((c) => c.email === u.email));
+        this.users = [...cu, ...lo]; this._saveLocal("users", this.users); this._notify();
+      }, (e) => console.warn("users:", e.message));
     }
-
-    _loadLocal(key, fallback) {
+    renderApp();
+  }
+  async login(email, password) {
+    const clean = email.trim().toLowerCase();
+    if (!clean || !password) throw new Error("أدخل البريد الإلكتروني وكلمة المرور.");
+    let ce = null;
+    if (this.isCloud && this.auth) {
+      try { const c = await this.auth.signInWithEmailAndPassword(clean, password); await this._resolveProfile(c.user); return; } catch (e) { ce = e; }
+    }
+    const lu = this.users.find((u) => u.email.toLowerCase() === clean);
+    if (lu && (await pwMatches(lu, password))) { this.currentUser = lu; this._afterLogin(); return; }
+    throw new Error(authErr(ce));
+  }
+  loginDemo(role) {
+    const t = this.users.find((u) => u.role === role && isLocalId(u.uid)) || this.users.find((u) => u.role === role);
+    if (!t) return toast("لا يوجد حساب تجريبي بهذه الصلاحية.");
+    this.currentUser = t; this._afterLogin(); toast("مرحباً بك: " + t.name);
+  }
+  async logout() {
+    this.records.unbind(); this.cleanings.unbind(); if (this.unsubUsers) { this.unsubUsers(); this.unsubUsers = null; }
+    if (this.isCloud && this.auth) { try { await this.auth.signOut(); } catch (e) {} }
+    this.currentUser = null; destroyMap();
+    $("appShell").classList.remove("on"); $("authScreen").style.display = "flex"; $("loginPassword").value = "";
+  }
+  async createUser({ name, email, password, role, zone }) {
+    if (this.currentUser?.role !== "admin") throw new Error("غير مصرح: هذه الصلاحية للأدمن فقط.");
+    const clean = email.trim().toLowerCase();
+    if (password.length < 6) throw new Error("كلمة المرور يجب ألا تقل عن 6 أحرف.");
+    let uid = "usr_" + Date.now();
+    if (this.isCloud && this.auth && this.auth.currentUser) {
       try {
-        const raw = localStorage.getItem("toshka_sys_" + key);
-        return raw ? JSON.parse(raw) : fallback;
-      } catch (e) { return fallback; }
+        if (!this.secondaryApp) this.secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryUserCreator");
+        const sa = this.secondaryApp.auth(); const c = await sa.createUserWithEmailAndPassword(clean, password);
+        uid = c.user.uid; await sa.signOut();
+        await this.db.collection("toshka_users").doc(uid).set({ name, email: clean, role, zone, createdAtMs: Date.now() });
+      } catch (e) { throw new Error(authErr(e)); }
     }
-    _saveLocal(key, val) {
-      try { localStorage.setItem("toshka_sys_" + key, JSON.stringify(val)); } catch (e) { /* ignore */ }
-    }
-
-    initFirebase() {
-      try {
-        if (typeof firebase === "undefined") throw new Error("Firebase SDK not loaded");
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        this.auth = firebase.auth();
-        this.db = firebase.firestore();
-        this.isCloud = true;
-        this._updateConnBadge(true);
-        this.auth.onAuthStateChanged(async (fbUser) => {
-          if (fbUser && !this.currentUser) {
-            try { await this._resolveUserProfile(fbUser); } catch (e) { console.warn(e); }
-          }
-        });
-      } catch (e) {
-        console.warn("Firebase غير متاح، سيعمل النظام محلياً:", e.message);
-        this.isCloud = false;
-        this._updateConnBadge(false);
-      }
-    }
-
-    _updateConnBadge(online) {
-      const el = $("connStatus");
-      if (!el) return;
-      el.className = "status-badge " + (online ? "status-cloud" : "status-local");
-      el.textContent = online ? "🟢 متصل بـ Firebase السحابي" : "🟠 وضع محلي (localStorage)";
-    }
-
-    async _resolveUserProfile(fbUser) {
-      const email = (fbUser.email || "").toLowerCase();
-      let profile = this.users.find((u) => u.email.toLowerCase() === email);
-
-      if (this.isCloud && this.db) {
-        try {
-          const snap = await this.db.collection("toshka_users").doc(fbUser.uid).get();
-          if (snap.exists) profile = { uid: fbUser.uid, ...snap.data() };
-        } catch (e) {
-          console.warn("تعذر جلب ملف المستخدم من Firestore:", e.message);
-        }
-      }
-      if (!profile) {
-        const isMaster = email === MASTER_ADMIN_EMAIL.toLowerCase();
-        profile = {
-          uid: fbUser.uid, email,
-          name: isMaster ? "مدير عام الإدارة (أدمن)" : email.split("@")[0],
-          role: isMaster ? "admin" : "user",
-          zone: isMaster ? ZONES[0] : "هندسة فرع 4"
-        };
-      }
-      this.currentUser = profile;
-      this._bindCloudListeners();
-      renderAuthenticatedUI();
-    }
-
-    _bindCloudListeners() {
-      if (!this.isCloud || !this.db || !this.currentUser || !this.auth.currentUser) return;
-      if (this.unsubRecords) this.unsubRecords();
-      let q = this.db.collection("toshka_field_records");
-      if (this.currentUser.role !== "admin") q = q.where("zone", "==", this.currentUser.zone);
-
-      this.unsubRecords = q.onSnapshot(
-        (snap) => {
-          const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-          list.sort((a, b) => (b.updatedAtMs || 0) - (a.updatedAtMs || 0));
-          this.records = list;
-          this._saveLocal("records", list);
-          this._notify();
-        },
-        (err) => console.warn("مزامنة السجلات:", err.message)
-      );
-
-      if (this.currentUser.role === "admin") {
-        if (this.unsubUsers) this.unsubUsers();
-        this.unsubUsers = this.db.collection("toshka_users").onSnapshot(
-          (snap) => {
-            const cloudUsers = snap.docs.map((d) => ({ uid: d.id, ...d.data() }));
-            const localOnly = this.users.filter((u) => isLocalId(u.uid) && !cloudUsers.some((c) => c.email === u.email));
-            this.users = [...cloudUsers, ...localOnly];
-            this._saveLocal("users", this.users);
-            this._notify();
-          },
-          (err) => console.warn("مزامنة المستخدمين:", err.message)
-        );
-      }
-    }
-
-    // ---------------- تسجيل الدخول ----------------
-    async login(email, password) {
-      const clean = email.trim().toLowerCase();
-      if (!clean || !password) throw new Error("أدخل البريد الإلكتروني وكلمة المرور.");
-
-      let cloudErr = null;
-      if (this.isCloud && this.auth) {
-        try {
-          const cred = await this.auth.signInWithEmailAndPassword(clean, password);
-          await this._resolveUserProfile(cred.user);
-          return;
-        } catch (e) {
-          cloudErr = e;
-        }
-      }
-
-      // حسابات محلية (وضع الأوفلاين أو حسابات تجريبية)
-      const local = this.users.find((u) => u.email.toLowerCase() === clean);
-      if (local && (await pwMatches(local, password))) {
-        this.currentUser = local;
-        renderAuthenticatedUI();
-        return;
-      }
-      throw new Error(authErrorMessage(cloudErr));
-    }
-
-    loginDemo(role) {
-      const target = this.users.find((u) => u.role === role && isLocalId(u.uid)) || this.users.find((u) => u.role === role);
-      if (!target) { showToast("لا يوجد حساب تجريبي بهذه الصلاحية."); return; }
-      this.currentUser = target;
-      renderAuthenticatedUI();
-      showToast("مرحباً بك: " + target.name);
-    }
-
-    async logout() {
-      if (this.unsubRecords) { this.unsubRecords(); this.unsubRecords = null; }
-      if (this.unsubUsers) { this.unsubUsers(); this.unsubUsers = null; }
-      if (this.isCloud && this.auth) { try { await this.auth.signOut(); } catch (e) {} }
-      this.currentUser = null;
-      $("appShell").classList.remove("active");
-      $("authScreen").style.display = "flex";
-      $("loginPassword").value = "";
-    }
-
-    getVisibleRecords() {
-      if (!this.currentUser) return [];
-      if (this.currentUser.role === "admin") return this.records;
-      return this.records.filter((r) => r.zone === this.currentUser.zone);
-    }
-
-    async addRecord(rec) {
-      const calc = calculateDischargeFromLevel(rec.level, rec.coefC, rec.datumH0, rec.expN);
-      const entry = { ...rec, dischargeCms: calc.qCms, dailyVolumeK: calc.dailyThousandM3,
-        updatedBy: this.currentUser.email, updatedAtMs: Date.now() };
-      const tempId = "loc_" + Date.now() + "_" + Math.random().toString(36).slice(2, 5);
-      this.records = [{ id: tempId, ...entry }, ...this.records];
-      this._saveLocal("records", this.records);
-      this._notify();
-      if (this.isCloud && this.db && this.auth.currentUser) {
-        try { await this.db.collection("toshka_field_records").add(entry); }
-        catch (e) { console.warn("حُفظ محلياً (تعذر الرفع السحابي):", e.message); showToast("تم الحفظ محلياً فقط (تعذر الرفع السحابي)"); }
-      }
-    }
-
-    async updateRecord(id, patch) {
-      this.records = this.records.map((r) => {
-        if (r.id !== id) return r;
-        const m = { ...r, ...patch, updatedBy: this.currentUser.email, updatedAtMs: Date.now() };
-        const c = calculateDischargeFromLevel(m.level, m.coefC, m.datumH0, m.expN);
-        m.dischargeCms = c.qCms;
-        m.dailyVolumeK = c.dailyThousandM3;
-        return m;
-      });
-      this._saveLocal("records", this.records);
-      this._notify();
-      const target = this.records.find((r) => r.id === id);
-      if (this.isCloud && this.db && this.auth.currentUser && target && !isLocalId(id)) {
-        try { const { id: _i, ...payload } = target; await this.db.collection("toshka_field_records").doc(id).update(payload); }
-        catch (e) { console.warn("تعذر التحديث سحابياً:", e.message); }
-      }
-    }
-
-    async deleteRecord(id) {
-      this.records = this.records.filter((r) => r.id !== id);
-      this._saveLocal("records", this.records);
-      this._notify();
-      if (this.isCloud && this.db && this.auth.currentUser && !isLocalId(id)) {
-        try { await this.db.collection("toshka_field_records").doc(id).delete(); } catch (e) {}
-      }
-    }
-
-    async adminCreateUser({ name, email, password, role, zone }) {
-      if (this.currentUser?.role !== "admin") throw new Error("غير مصرح: هذه الصلاحية للأدمن فقط.");
-      const clean = email.trim().toLowerCase();
-      if (password.length < 6) throw new Error("كلمة المرور يجب ألا تقل عن 6 أحرف.");
-      let uid = "usr_" + Date.now();
-
-      if (this.isCloud && this.auth && this.auth.currentUser && typeof firebase !== "undefined") {
-        try {
-          if (!this.secondaryApp) this.secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryUserCreator");
-          const secAuth = this.secondaryApp.auth();
-          const created = await secAuth.createUserWithEmailAndPassword(clean, password);
-          uid = created.user.uid;
-          await secAuth.signOut();
-          await this.db.collection("toshka_users").doc(uid).set({ name, email: clean, role, zone, createdAtMs: Date.now() });
-        } catch (e) {
-          throw new Error(authErrorMessage(e));
-        }
-      }
-      const obj = { uid, name, email: clean, pwHash: await hashPw(password), role, zone };
-      // لا نخزن كلمة المرور محلياً للحسابات السحابية
-      if (!isLocalId(uid)) delete obj.pwHash;
-      this.users = [obj, ...this.users.filter((u) => u.email !== clean)];
-      this._saveLocal("users", this.users);
-      this._notify();
-    }
-
-    async adminUpdateUser(uid, newZone, newRole) {
-      if (this.currentUser?.role !== "admin") return;
-      this.users = this.users.map((u) => (u.uid === uid ? { ...u, zone: newZone, role: newRole } : u));
-      this._saveLocal("users", this.users);
-      this._notify();
-      if (this.isCloud && this.db && this.auth.currentUser && !isLocalId(uid)) {
-        try { await this.db.collection("toshka_users").doc(uid).update({ zone: newZone, role: newRole }); } catch (e) {}
-      }
-    }
-
-    subscribe(fn) { this.listeners.push(fn); }
-    _notify() { this.listeners.forEach((fn) => fn()); }
+    const o = { uid, name, email: clean, role, zone };
+    if (isLocalId(uid)) o.pwHash = await hashPw(password);
+    this.users = [o, ...this.users.filter((u) => u.email !== clean)]; this._saveLocal("users", this.users); this._notify();
   }
-
-  const sys = new ToshkaSystem();
-
-  // ===================================================================
-  // 5. الواجهات
-  // ===================================================================
-  let activeTab = "dashboard";
-
-  function getNavItems() {
-    const items = [
-      { id: "dashboard", icon: "🏛️", label: "الواجهة الرئيسية والملخص" },
-      { id: "excel_sheet", icon: "📊", label: "سجل المناسيب والتصرفات (Excel)" },
-      { id: "memo_builder", icon: "📝", label: "إعداد المذكرة الشاملة بالملخص" }
-    ];
-    if (sys.currentUser?.role === "admin") items.push({ id: "admin_users", icon: "👑", label: "إدارة المستخدمين والصلاحيات" });
-    return items;
+  async updateUser(uid, zone, role) {
+    if (this.currentUser?.role !== "admin") return;
+    this.users = this.users.map((u) => (u.uid === uid ? { ...u, zone, role } : u)); this._saveLocal("users", this.users); this._notify();
+    if (this.isCloud && this.auth && this.auth.currentUser && !isLocalId(uid)) { try { await this.db.collection("toshka_users").doc(uid).update({ zone, role }); } catch (e) {} }
   }
+}
+const sys = new System();
 
-  function renderNav() {
-    $("navList").innerHTML = getNavItems().map((item) => `
-      <li><button class="nav-btn ${activeTab === item.id ? "active" : ""}" data-tab="${item.id}">
-        <span>${item.icon}</span><span>${item.label}</span></button></li>`).join("");
+// =====================================================================
+// 6. الحالة والخريطة
+// =====================================================================
+const state = {
+  lvl: { from: "", to: "", q: "", zone: "" },
+  rep: { from: "", to: "", zone: "" },
+  meta: sys._loadLocal("meta", null) || {
+    director: "م. عُرفة عبد المطلب متولي",
+    intro: "بناءً على توجيهات السيد المهندس / مدير عام الإدارة العامة للموارد المائية والري بجنوب الوادي بتوشكى، تم إعداد التقرير الميداني الدوري لمتابعة المناسيب والتصرفات وأعمال التطهيرات بنطاق الهندسات.",
+    recs: "- استمرار المتابعة اليومية للمناسيب والتصرفات بجميع المواقع.\n- سرعة الانتهاء من أعمال التطهير بالمواقع المتأخرة.\n- مراجعة معاملات المعايرة دورياً لضمان دقة حساب التصرفات."
   }
+};
+let mapInst = null, mapView = null, mapLayers = {}, pickTemp = {}, isRefresh = false;
 
-  function renderAuthenticatedUI() {
-    $("authScreen").style.display = "none";
-    $("appShell").classList.add("active");
-    const u = sys.currentUser;
-    $("sidebarUserName").textContent = u.name;
-    $("sidebarUserZone").textContent = "النطاق: " + u.zone;
-    const badge = $("sidebarRoleBadge");
-    if (u.role === "admin") { badge.textContent = "👑 صلاحية أدمن (تحكم كامل)"; badge.className = "user-role-badge"; }
-    else { badge.textContent = "👷 مهندس منطقة (نطاق محدد)"; badge.className = "user-role-badge eng"; }
-    $("bannerDateText").textContent = "📅 " + getArabicDateFull();
-    if (activeTab === "admin_users" && u.role !== "admin") activeTab = "dashboard";
-    renderNav();
-    renderActiveTab();
-  }
-
-  function renderActiveTab() {
-    const c = $("mainContent");
-    if (activeTab === "dashboard") renderDashboard(c);
-    else if (activeTab === "excel_sheet") renderExcelSheet(c);
-    else if (activeTab === "memo_builder") renderMemoBuilder(c);
-    else if (activeTab === "admin_users") renderAdminUsers(c);
-  }
-
-  window._goTab = function (tab) {
-    activeTab = tab;
-    renderNav();
-    renderActiveTab();
-    $("sidebar").classList.remove("open");
-    window.scrollTo(0, 0);
-  };
-
-  // ---------- الواجهة الرئيسية ----------
-  function renderDashboard(container) {
-    const rows = sys.getVisibleRecords();
-    const total = rows.length;
-    const totalQ = rows.reduce((s, r) => s + (parseFloat(r.dischargeCms) || 0), 0);
-    const totalVol = rows.reduce((s, r) => s + (parseFloat(r.dailyVolumeK) || 0), 0);
-    const avgLevel = total ? rows.reduce((s, r) => s + (parseFloat(r.level) || 0), 0) / total : 0;
-    const cleanDone = rows.filter((r) => r.cleaningStatus === "مطهرة بالكامل").length;
-    const cleanPct = total ? Math.round((cleanDone / total) * 100) : 0;
-
-    const byZone = {};
-    rows.forEach((r) => {
-      const z = (byZone[r.zone] = byZone[r.zone] || { count: 0, qCms: 0, volK: 0, levels: [] });
-      z.count++;
-      z.qCms += parseFloat(r.dischargeCms) || 0;
-      z.volK += parseFloat(r.dailyVolumeK) || 0;
-      z.levels.push(parseFloat(r.level) || 0);
+function destroyMap() {
+  if (mapInst) { try { mapView = { c: mapInst.getCenter(), z: mapInst.getZoom() }; mapInst.remove(); } catch (e) {} }
+  mapInst = null; mapLayers = {}; pickTemp = {};
+}
+function gmaps(lat, lng) { return `https://www.google.com/maps?q=${lat},${lng}`; }
+function buildMap(elId, items, opts = {}) {
+  const el = $(elId); if (!el) return;
+  if (typeof L === "undefined") { el.innerHTML = '<div class="empty">تعذر تحميل مكتبة الخريطة، تحقق من الاتصال بالإنترنت.</div>'; return; }
+  const keep = opts.keep && mapView; const old = mapView; destroyMap();
+  const map = L.map(elId, { scrollWheelZoom: true });
+  const osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap" });
+  const sat = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { maxZoom: 18, attribution: "Esri World Imagery" });
+  osm.addTo(map); L.control.layers({ "خريطة الشوارع": osm, "قمر صناعي": sat }).addTo(map);
+  const pts = [];
+  items.forEach((c) => {
+    if (isNaN(parseFloat(c.lat)) || isNaN(parseFloat(c.lng))) return;
+    const col = stColor(c.progress), A = [num(c.lat), num(c.lng)];
+    pts.push(A);
+    const popup = `<div dir="rtl" style="min-width:190px"><b>${esc(c.name)}</b><br>${esc(c.zone)}<br>
+      الكيلو: ${esc(c.kmFrom)} → ${esc(c.kmTo)} (${esc(c.lengthKm)} كم)<br>
+      الإنجاز: <b style="color:${col}">${esc(c.progress)}% — ${esc(c.status)}</b><br>
+      ${c.notes ? esc(c.notes) + "<br>" : ""}<a href="${gmaps(A[0], A[1])}" target="_blank" rel="noopener">فتح في خرائط جوجل ↗</a></div>`;
+    const grp = L.layerGroup().addTo(map);
+    L.circleMarker(A, { color: "#fff", weight: 2, fillColor: col, fillOpacity: 0.95, radius: 11 }).bindPopup(popup).bindTooltip(esc(c.name)).addTo(grp);
+    if (!isNaN(parseFloat(c.lat2)) && !isNaN(parseFloat(c.lng2))) {
+      const B = [num(c.lat2), num(c.lng2)]; pts.push(B);
+      L.polyline([A, B], { color: col, weight: 6, opacity: 0.8 }).bindPopup(popup).addTo(grp);
+      L.circleMarker(B, { color: "#fff", weight: 2, fillColor: col, fillOpacity: 0.95, radius: 7 }).addTo(grp);
+    }
+    mapLayers[c.id] = { grp, A };
+  });
+  if (keep && old) map.setView(old.c, old.z);
+  else if (pts.length) map.fitBounds(pts, { padding: [50, 50], maxZoom: 13 });
+  else map.setView(MAP_CENTER, 8);
+  if (opts.onPick) {
+    map.on("click", (e) => {
+      opts.onPick(e.latlng);
     });
+  }
+  mapInst = map;
+  setTimeout(() => map.invalidateSize(), 150);
+}
 
-    container.innerHTML = `
-      <div class="card" style="background:linear-gradient(135deg,#0b4a7d 0%,#0d7a73 100%); color:#fff; border:none;">
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
-          <div>
-            <div style="font-size:.85rem; opacity:.9;">وزارة الموارد المائية والري</div>
-            <h1 style="font-size:1.45rem; font-weight:800; margin:.2rem 0;">الإدارة العامة للموارد المائية والري بجنوب الوادي بتوشكى</h1>
-            <div style="font-size:.92rem; opacity:.95;">📆 ${esc(getArabicDateFull())} | النطاق المعروض: <strong>${esc(sys.currentUser.zone)}</strong></div>
+// =====================================================================
+// 7. الصفحات
+// =====================================================================
+const ROUTES = {
+  dashboard: { title: "الواجهة الرئيسية", icon: "fa-gauge-high", render: pgDashboard },
+  levels: { title: "شيت المناسيب والتصرفات", icon: "fa-table-cells", render: pgLevels },
+  cleaning: { title: "أعمال التطهير والخرائط", icon: "fa-broom", render: pgCleaning },
+  calculator: { title: "حاسبة التصرف (مانينج)", icon: "fa-calculator", render: pgCalc },
+  report: { title: "التقرير النهائي", icon: "fa-file-lines", render: pgReport },
+  users: { title: "المستخدمون والصلاحيات", icon: "fa-users-gear", render: pgUsers, admin: true }
+};
+function curRoute() {
+  const h = location.hash.replace(/^#\/?/, "");
+  const r = ROUTES[h];
+  return r && (!r.admin || sys.currentUser?.role === "admin") ? h : "dashboard";
+}
+function head(t, p) { return `<div class="page-head"><h1>${t}</h1><p>${p}</p></div>`; }
+function zoneOpts(list, sel, all) {
+  return (all ? `<option value="">${all}</option>` : "") + list.map((z) => `<option value="${esc(z)}" ${z === sel ? "selected" : ""}>${esc(z)}</option>`).join("");
+}
+function cleanPillHtml(c) { return `<span class="pill ${stPill(c.progress)}">${esc(c.status)}</span>`; }
+
+// ---------- الرئيسية ----------
+function pgDashboard(c) {
+  const rows = sys.records.visible(), latest = latestRecords(rows), cl = sys.cleanings.visible(), cs = cleanStats(cl);
+  const q = latest.reduce((s, r) => s + num(r.dischargeCms), 0), v = latest.reduce((s, r) => s + num(r.dailyVolumeK), 0);
+  const al = latest.length ? latest.reduce((s, r) => s + num(r.level), 0) / latest.length : 0;
+  const zs = zoneSummary(latest, cl);
+  const recent = [...rows].sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.updatedAtMs || 0) - (a.updatedAtMs || 0)).slice(0, 6);
+  c.innerHTML = `
+    ${head("الواجهة الرئيسية والملخص", `${esc(arDate())} — النطاق المعروض: <b>${esc(sys.currentUser.zone)}</b>`)}
+    <div class="kpis">
+      <div class="kpi"><div class="ic blue"><i class="fas fa-location-dot"></i></div><div><div class="l">مواقع الرصد (آخر قراءة)</div><div class="v">${latest.length}</div><div class="s">من ${rows.length} قراءة مسجلة</div></div></div>
+      <div class="kpi"><div class="ic teal"><i class="fas fa-droplet"></i></div><div><div class="l">إجمالي التصرفات الحالية</div><div class="v">${fx(q)} م³/ث</div><div class="s">${fx(v, 1)} ألف م³/يوم</div></div></div>
+      <div class="kpi"><div class="ic green"><i class="fas fa-ruler-vertical"></i></div><div><div class="l">متوسط المناسيب</div><div class="v">${fx(al)} م</div><div class="s">فوق سطح البحر</div></div></div>
+      <div class="kpi"><div class="ic amber"><i class="fas fa-broom"></i></div><div><div class="l">نسبة إنجاز التطهير</div><div class="v">${cs.prog}%</div><div class="s">${cs.done} مكتمل | ${cs.run} جاري | ${cs.none} لم يبدأ</div></div></div>
+    </div>
+    <div class="grid2">
+      <div class="card"><div class="card-h"><h3><i class="fas fa-map-location-dot"></i> خريطة مواقع التطهير</h3><a class="btn btn-o btn-sm" href="#/cleaning">فتح الصفحة الكاملة</a></div>
+        <div id="dashMap" class="map sm"></div>
+        <div class="legend"><span style="--c:#15803d">مكتمل</span><span style="--c:#d97706">جاري</span><span style="--c:#b91c1c">لم يبدأ</span></div></div>
+      <div class="card"><div class="card-h"><h3><i class="fas fa-clock-rotate-left"></i> آخر القراءات</h3><a class="btn btn-o btn-sm" href="#/levels">شيت المناسيب</a></div>
+        <div class="wrap"><table class="t"><thead><tr><th>التاريخ</th><th>الموقع</th><th>المنسوب</th><th>التصرف</th></tr></thead><tbody>
+        ${recent.length ? recent.map((r) => `<tr><td>${esc(r.date)}</td><td>${esc(r.canalName)}</td><td>${fx(r.level)}</td><td><b>${fx(r.dischargeCms, 3)}</b></td></tr>`).join("") : `<tr><td colspan="4" class="empty">لا توجد قراءات.</td></tr>`}
+        </tbody></table></div></div>
+    </div>
+    <div class="card"><div class="card-h"><h3><i class="fas fa-chart-column"></i> الملخص التنفيذي حسب الهندسات</h3></div>
+      <div class="wrap"><table class="t"><thead><tr><th>الهندسة</th><th>مواقع الرصد</th><th>متوسط المنسوب (م)</th><th>التصرف (م³/ث)</th><th>الحجم (ألف م³/يوم)</th><th>أعمال التطهير</th><th>الإنجاز</th></tr></thead><tbody>
+      ${Object.keys(zs).length ? Object.entries(zs).map(([z, o]) => { const s = cleanStats(o.cl); return `<tr><td><b>${esc(z)}</b></td><td>${o.n}</td><td>${o.n ? fx(o.l / o.n) : "-"}</td><td><b>${fx(o.q, 3)}</b></td><td>${fx(o.v, 1)}</td><td>${s.total}</td><td><div class="bar"><i style="width:${s.prog}%"></i></div> ${s.prog}%</td></tr>`; }).join("")
+        : `<tr><td colspan="7" class="empty">لا توجد بيانات في هذا النطاق بعد.</td></tr>`}
+      </tbody></table></div></div>`;
+  buildMap("dashMap", cl, { keep: isRefresh });
+}
+
+// ---------- شيت المناسيب ----------
+function pgLevels(c) {
+  const isAdmin = sys.currentUser.role === "admin", f = state.lvl;
+  let rows = sys.records.visible();
+  if (f.from) rows = rows.filter((r) => r.date >= f.from);
+  if (f.to) rows = rows.filter((r) => r.date <= f.to);
+  if (f.zone && isAdmin) rows = rows.filter((r) => r.zone === f.zone);
+  if (f.q) rows = rows.filter((r) => (r.canalName + " " + (r.notes || "")).includes(f.q));
+  rows = [...rows].sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.updatedAtMs || 0) - (a.updatedAtMs || 0));
+  const zoneList = isAdmin ? REAL_ZONES : [sys.currentUser.zone];
+  const sq = rows.reduce((s, r) => s + num(r.dischargeCms), 0);
+  c.innerHTML = `
+    ${head("شيت المناسيب والتصرفات", "إدخال قراءات المناسيب يومياً؛ يُحسب التصرف والحجم اليومي تلقائياً من منحنى المعايرة Q = C × (H − H0)ⁿ")}
+    <div class="card"><div class="card-h"><h3><i class="fas fa-plus-circle"></i> إدخال قراءة منسوب جديدة</h3></div>
+      <form id="addRecordForm" class="grid-form">
+        <div class="fg"><label>التاريخ *</label><input type="date" id="rDate" value="${todayISO()}" required></div>
+        <div class="fg"><label>الهندسة *</label><select id="rZone" ${isAdmin ? "" : "disabled"}>${zoneOpts(zoneList, "")}</select></div>
+        <div class="fg"><label>الترعة / الموقع *</label><input type="text" id="rCanal" required placeholder="مثال: مأخذ فرع 4"></div>
+        <div class="fg"><label>المنسوب المقاس H (م) *</label><input type="number" step="0.01" id="rLevel" required placeholder="178.20"></div>
+        <div class="fg"><label>منسوب العتب H0 (م)</label><input type="number" step="0.01" id="rH0" value="175.00"></div>
+        <div class="fg"><label>معامل المعايرة C</label><input type="number" step="0.1" id="rC" value="12.5"></div>
+        <div class="fg"><label>الأس n</label><input type="number" step="0.01" id="rN" value="1.5"></div>
+        <div class="fg"><label>التصرف المحسوب</label><input type="text" id="rPrev" readonly value="0.000 م³/ث"></div>
+        <div class="fg full"><label>ملاحظات</label><input type="text" id="rNotes" placeholder="اختياري"></div>
+        <div class="fg full"><button class="btn btn-t" type="submit"><i class="fas fa-floppy-disk"></i> حفظ القراءة</button></div>
+      </form></div>
+
+    <div class="card"><div class="card-h"><h3><i class="fas fa-table-cells"></i> السجل (${rows.length} قراءة | مجموع التصرفات المعروضة ${fx(sq, 2)} م³/ث)</h3></div>
+      <div class="filters">
+        <div class="fg"><label>من تاريخ</label><input type="date" data-filter="lvl.from" value="${esc(f.from)}"></div>
+        <div class="fg"><label>إلى تاريخ</label><input type="date" data-filter="lvl.to" value="${esc(f.to)}"></div>
+        ${isAdmin ? `<div class="fg"><label>الهندسة</label><select data-filter="lvl.zone">${zoneOpts(REAL_ZONES, f.zone, "الكل")}</select></div>` : ""}
+        <div class="fg"><label>بحث</label><input type="text" data-filter="lvl.q" value="${esc(f.q)}" placeholder="اسم الموقع أو ملاحظة"></div>
+        <button class="btn btn-o" data-clear="lvl"><i class="fas fa-eraser"></i> مسح</button>
+      </div>
+      <div class="note"><i class="fas fa-pen"></i> يمكنك تعديل المنسوب والمعاملات مباشرة داخل الجدول، ويُعاد حساب التصرف فور الخروج من الخلية.</div>
+      <div class="wrap"><table class="t"><thead><tr><th>التاريخ</th><th>الهندسة</th><th>الموقع</th><th>المنسوب H</th><th>H0</th><th>C</th><th>n</th><th>التصرف (م³/ث)</th><th>الحجم (ألف م³/يوم)</th><th>ملاحظات</th><th>بواسطة</th><th></th></tr></thead><tbody>
+      ${rows.length ? rows.map((r) => { const id = esc(r.id); return `<tr>
+        <td><input class="ci" type="date" data-id="${id}" data-f="date" value="${esc(r.date)}"></td>
+        <td>${esc(r.zone)}</td>
+        <td><input class="ci" style="min-width:150px" data-id="${id}" data-f="canalName" value="${esc(r.canalName)}"></td>
+        <td><input class="ci" type="number" step="0.01" data-num="1" data-id="${id}" data-f="level" value="${esc(r.level)}"></td>
+        <td><input class="ci" type="number" step="0.01" data-num="1" data-id="${id}" data-f="datumH0" value="${esc(r.datumH0)}"></td>
+        <td><input class="ci" type="number" step="0.1" data-num="1" data-id="${id}" data-f="coefC" value="${esc(r.coefC)}"></td>
+        <td><input class="ci" type="number" step="0.01" data-num="1" data-id="${id}" data-f="expN" value="${esc(r.expN)}"></td>
+        <td><b>${fx(r.dischargeCms, 3)}</b></td><td>${fx(r.dailyVolumeK, 2)}</td>
+        <td><input class="ci" style="min-width:190px" data-id="${id}" data-f="notes" value="${esc(r.notes)}"></td>
+        <td style="font-size:.74rem;color:var(--muted)">${esc(r.updatedBy)}</td>
+        <td><button class="btn btn-d" data-del="${id}" data-store="records"><i class="fas fa-trash"></i></button></td></tr>`; }).join("")
+        : `<tr><td colspan="12" class="empty">لا توجد قراءات مطابقة.</td></tr>`}
+      </tbody></table></div></div>`;
+  prevRec();
+}
+function prevRec() {
+  const p = $("rPrev"); if (!p) return;
+  const r = calcRec({ level: $("rLevel").value, coefC: $("rC").value, datumH0: $("rH0").value, expN: $("rN").value });
+  p.value = `${fx(r.dischargeCms, 3)} م³/ث  (${fx(r.dailyVolumeK, 1)} ألف م³/يوم)`;
+}
+
+// ---------- التطهير والخرائط ----------
+function pgCleaning(c) {
+  const isAdmin = sys.currentUser.role === "admin";
+  const list = sys.cleanings.visible(), cs = cleanStats(list);
+  const zoneList = isAdmin ? REAL_ZONES : [sys.currentUser.zone];
+  c.innerHTML = `
+    ${head("أعمال التطهير والخرائط", "تسجيل مواقع التطهير ونسب الإنجاز وإحداثيات البداية والنهاية، مع عرضها على الخريطة")}
+    <div class="kpis">
+      <div class="kpi"><div class="ic blue"><i class="fas fa-list-check"></i></div><div><div class="l">عدد الأعمال</div><div class="v">${cs.total}</div><div class="s">${fx(cs.len, 1)} كم إجمالي الأطوال</div></div></div>
+      <div class="kpi"><div class="ic green"><i class="fas fa-circle-check"></i></div><div><div class="l">مكتملة</div><div class="v">${cs.done}</div></div></div>
+      <div class="kpi"><div class="ic amber"><i class="fas fa-person-digging"></i></div><div><div class="l">جاري العمل</div><div class="v">${cs.run}</div></div></div>
+      <div class="kpi"><div class="ic teal"><i class="fas fa-gauge"></i></div><div><div class="l">نسبة الإنجاز (مرجحة بالطول)</div><div class="v">${cs.prog}%</div></div></div>
+    </div>
+
+    <div class="card"><div class="card-h"><h3><i class="fas fa-map-location-dot"></i> خريطة مواقع التطهير</h3></div>
+      <div id="clMap" class="map"></div>
+      <div class="legend"><span style="--c:#15803d">مكتمل</span><span style="--c:#d97706">جاري</span><span style="--c:#b91c1c">لم يبدأ</span><span style="--c:#1d5fa8">اضغط على الخريطة لتحديد الإحداثيات في النموذج</span></div></div>
+
+    <div class="card"><div class="card-h"><h3><i class="fas fa-plus-circle"></i> إضافة عمل تطهير</h3></div>
+      <form id="cleanForm" class="grid-form">
+        <div class="fg"><label>الهندسة *</label><select id="cZone" ${isAdmin ? "" : "disabled"}>${zoneOpts(zoneList, "")}</select></div>
+        <div class="fg"><label>اسم الترعة / الموقع *</label><input type="text" id="cName" required placeholder="مثال: ترعة فرع 2 كم 5-12"></div>
+        <div class="fg"><label>من كيلو</label><input type="number" step="0.1" id="cKm1" value="0"></div>
+        <div class="fg"><label>إلى كيلو</label><input type="number" step="0.1" id="cKm2" value="0"></div>
+        <div class="fg"><label>تاريخ البدء</label><input type="date" id="cStart" value="${todayISO()}"></div>
+        <div class="fg"><label>تاريخ الانتهاء المتوقع</label><input type="date" id="cEnd"></div>
+        <div class="fg"><label>نسبة الإنجاز: <b id="cProgOut">0%</b></label><input type="range" id="cProg" min="0" max="100" step="5" value="0"></div>
+        <div class="fg full" style="background:#f1f7fc;border:1px solid var(--line);border-radius:10px;padding:.8rem">
+          <label><i class="fas fa-crosshairs"></i> الموقع الجغرافي — اختر نقطة ثم اضغط على الخريطة:</label>
+          <div style="display:flex;gap:1.2rem;flex-wrap:wrap;margin:.3rem 0">
+            <label><input type="radio" name="pickmode" value="1" checked style="width:auto"> نقطة البداية</label>
+            <label><input type="radio" name="pickmode" value="2" style="width:auto"> نقطة النهاية (اختيارية)</label>
+            <button type="button" class="btn btn-o btn-sm" id="geoBtn"><i class="fas fa-location-crosshairs"></i> استخدام موقعي الحالي</button>
           </div>
-          <div style="display:flex; gap:.5rem; flex-wrap:wrap;">
-            <button class="btn" style="background:#fff; color:#0b4a7d;" onclick="window._goTab('excel_sheet')">📊 فتح شيت المناسيب والتصرفات</button>
-            <button class="btn" style="background:#fbbf24; color:#0f172a;" onclick="window._goTab('memo_builder')">📝 توليد المذكرة الشاملة</button>
+          <div class="grid-form">
+            <div class="fg"><label>خط العرض (بداية)</label><input type="number" step="any" id="cLat"></div>
+            <div class="fg"><label>خط الطول (بداية)</label><input type="number" step="any" id="cLng"></div>
+            <div class="fg"><label>خط العرض (نهاية)</label><input type="number" step="any" id="cLat2"></div>
+            <div class="fg"><label>خط الطول (نهاية)</label><input type="number" step="any" id="cLng2"></div>
           </div>
         </div>
+        <div class="fg full"><label>ملاحظات</label><input type="text" id="cNotes" placeholder="نوع الأعمال، المعدات، المعوقات..."></div>
+        <div class="fg full"><button class="btn btn-t" type="submit"><i class="fas fa-floppy-disk"></i> حفظ عمل التطهير</button></div>
+      </form></div>
+
+    <div class="card"><div class="card-h"><h3><i class="fas fa-table-list"></i> سجل أعمال التطهير (${list.length})</h3></div>
+      <div class="wrap"><table class="t"><thead><tr><th>الهندسة</th><th>الموقع</th><th>من كم</th><th>إلى كم</th><th>الطول (كم)</th><th>الإنجاز %</th><th>الحالة</th><th>تاريخ البدء</th><th>الانتهاء المتوقع</th><th>الإحداثيات</th><th>ملاحظات</th><th></th></tr></thead><tbody>
+      ${list.length ? list.map((r) => { const id = esc(r.id), has = !isNaN(parseFloat(r.lat)) && !isNaN(parseFloat(r.lng)); return `<tr>
+        <td>${esc(r.zone)}</td>
+        <td><input class="ci" style="min-width:180px" data-cid="${id}" data-f="name" value="${esc(r.name)}"></td>
+        <td><input class="ci" type="number" step="0.1" data-num="1" data-cid="${id}" data-f="kmFrom" value="${esc(r.kmFrom)}"></td>
+        <td><input class="ci" type="number" step="0.1" data-num="1" data-cid="${id}" data-f="kmTo" value="${esc(r.kmTo)}"></td>
+        <td><b>${fx(r.lengthKm, 1)}</b></td>
+        <td><input class="ci" type="number" min="0" max="100" step="5" data-num="1" data-cid="${id}" data-f="progress" value="${esc(r.progress)}" style="min-width:70px"></td>
+        <td>${cleanPillHtml(r)}</td>
+        <td><input class="ci" type="date" data-cid="${id}" data-f="startDate" value="${esc(r.startDate)}"></td>
+        <td><input class="ci" type="date" data-cid="${id}" data-f="endDate" value="${esc(r.endDate)}"></td>
+        <td>${has ? `<button class="btn btn-o btn-sm" data-locate="${id}"><i class="fas fa-location-dot"></i> على الخريطة</button> <a class="btn btn-o btn-sm" target="_blank" rel="noopener" href="${gmaps(r.lat, r.lng)}"><i class="fas fa-up-right-from-square"></i></a>` : '<span style="color:var(--muted)">غير محدد</span>'}</td>
+        <td><input class="ci" style="min-width:180px" data-cid="${id}" data-f="notes" value="${esc(r.notes)}"></td>
+        <td><button class="btn btn-d" data-del="${id}" data-store="cleanings"><i class="fas fa-trash"></i></button></td></tr>`; }).join("")
+        : `<tr><td colspan="12" class="empty">لا توجد أعمال تطهير مسجلة.</td></tr>`}
+      </tbody></table></div></div>`;
+  buildMap("clMap", list, { keep: isRefresh, onPick: (ll) => {
+    const m = (document.querySelector('input[name="pickmode"]:checked') || {}).value || "1";
+    const la = m === "1" ? "cLat" : "cLat2", lo = m === "1" ? "cLng" : "cLng2";
+    $(la).value = ll.lat.toFixed(6); $(lo).value = ll.lng.toFixed(6);
+    if (pickTemp[m]) mapInst.removeLayer(pickTemp[m]);
+    pickTemp[m] = L.marker(ll).addTo(mapInst).bindTooltip(m === "1" ? "البداية" : "النهاية");
+  } });
+}
+
+// ---------- الحاسبة ----------
+function pgCalc(c) {
+  c.innerHTML = `
+    ${head("حاسبة التصرف (معادلة مانينج)", "حساب التصرف للقنوات المكشوفة ذات القطاع شبه المنحرف: Q = (1/n) × A × R^(2/3) × S^(1/2)")}
+    <div class="card"><form id="calcForm" class="grid-form" onsubmit="return false">
+      <div class="fg"><label>عرض القاع b (م)</label><input type="number" step="0.1" id="kB" value="5"></div>
+      <div class="fg"><label>عمق المياه y (م)</label><input type="number" step="0.01" id="kY" value="1.5"></div>
+      <div class="fg"><label>ميل الجانب m (أفقي : 1 رأسي)</label><input type="number" step="0.1" id="kM" value="1.5"></div>
+      <div class="fg"><label>ميل القاع S</label><input type="number" step="0.00001" id="kS" value="0.0001"></div>
+      <div class="fg"><label>معامل الخشونة n</label><input type="number" step="0.001" id="kN" value="0.022"></div>
+    </form>
+    <div id="calcRes"></div></div>`;
+  calcManning();
+}
+function calcManning() {
+  const el = $("calcRes"); if (!el) return;
+  const r = manning(num($("kB").value), num($("kY").value), num($("kM").value), num($("kS").value), num($("kN").value));
+  el.innerHTML = `<div class="res-grid">
+    <div class="res big"><b>${fx(r.Q, 3)} م³/ث</b><span>التصرف Q</span></div>
+    <div class="res"><b>${fx(r.A)} م²</b><span>مساحة المقطع A</span></div>
+    <div class="res"><b>${fx(r.P)} م</b><span>المحيط المبلل P</span></div>
+    <div class="res"><b>${fx(r.R, 3)} م</b><span>نصف القطر الهيدروليكي R</span></div>
+    <div class="res"><b>${fx(r.V, 3)} م/ث</b><span>السرعة V</span></div>
+    <div class="res"><b>${fx(r.Fr, 3)}</b><span>رقم فرويد (${r.Fr < 1 ? "جريان هادئ" : "جريان سريع"})</span></div>
+    <div class="res"><b>${fx(r.Q * 86.4, 1)}</b><span>الحجم اليومي (ألف م³)</span></div></div>`;
+}
+
+// ---------- التقرير النهائي ----------
+const RPT_CSS = `.rpt{font-family:Tahoma,Arial,sans-serif;color:#111;line-height:1.9;direction:rtl}
+.rpt .hd{text-align:center;border-bottom:3px double #0a2540;padding-bottom:10px;margin-bottom:14px}
+.rpt .hd small{display:block;font-size:13px;color:#0f766e;font-weight:700}
+.rpt .hd h1{font-size:19px;color:#0a2540;margin:4px 0}.rpt .hd h2{font-size:15px;margin:2px 0;font-weight:700}
+.rpt h3{font-size:15px;color:#0a2540;border-right:5px solid #0f766e;padding-right:8px;margin:18px 0 8px}
+.rpt table{width:100%;border-collapse:collapse;font-size:12.5px;margin:6px 0}
+.rpt th{background:#0f3558;color:#fff;padding:5px 7px;border:1px solid #0f3558}
+.rpt td{border:1px solid #9fb2c6;padding:4px 7px;text-align:center}
+.rpt .kv{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0}.rpt .kv div{flex:1;min-width:130px;border:1px solid #9fb2c6;border-radius:6px;padding:6px;text-align:center;background:#f1f7fc}
+.rpt .kv b{display:block;font-size:16px;color:#0a2540}.rpt .sig{display:flex;justify-content:space-around;margin-top:40px;text-align:center;font-weight:700}
+.rpt p{text-align:justify;font-size:13.5px}`;
+
+function buildReport() {
+  const u = sys.currentUser, f = state.rep, m = state.meta;
+  let rows = sys.records.visible();
+  if (f.from) rows = rows.filter((r) => r.date >= f.from);
+  if (f.to) rows = rows.filter((r) => r.date <= f.to);
+  if (f.zone) rows = rows.filter((r) => r.zone === f.zone);
+  let cl = sys.cleanings.visible(); if (f.zone) cl = cl.filter((r) => r.zone === f.zone);
+  const latest = latestRecords(rows), cs = cleanStats(cl), zs = zoneSummary(latest, cl);
+  const q = latest.reduce((s, r) => s + num(r.dischargeCms), 0), v = latest.reduce((s, r) => s + num(r.dailyVolumeK), 0);
+  const al = latest.length ? latest.reduce((s, r) => s + num(r.level), 0) / latest.length : 0;
+  const period = f.from || f.to ? `الفترة: ${f.from ? "من " + f.from : ""} ${f.to ? "إلى " + f.to : ""}` : "الفترة: جميع القراءات المسجلة";
+  const sorted = [...rows].sort((a, b) => (a.zone || "").localeCompare(b.zone || "", "ar") || (b.date || "").localeCompare(a.date || ""));
+  return `<div class="rpt">
+    <div class="hd"><small>وزارة الموارد المائية والري</small><h1>الإدارة العامة للموارد المائية والري بجنوب الوادي بتوشكى</h1>
+      <h2>التقرير النهائي: متابعة المناسيب والتصرفات وأعمال التطهيرات</h2>
+      <div style="font-size:12.5px">التاريخ: ${esc(arDate())} — ${esc(period)} — النطاق: ${esc(f.zone || (u.role === "admin" ? "جميع الهندسات" : u.zone))}</div></div>
+    <h3>أولاً: مقدمة</h3><p>${nl2br(m.intro)}</p>
+    <h3>ثانياً: الموقف العام للمناسيب والتصرفات (آخر قراءة لكل موقع)</h3>
+    <div class="kv"><div><b>${latest.length}</b>مواقع الرصد</div><div><b>${fx(al)} م</b>متوسط المنسوب</div><div><b>${fx(q, 2)} م³/ث</b>إجمالي التصرف</div><div><b>${fx(v, 1)}</b>ألف م³/يوم</div></div>
+    <table><tr><th>الهندسة</th><th>عدد المواقع</th><th>متوسط المنسوب (م)</th><th>التصرف (م³/ث)</th><th>الحجم (ألف م³/يوم)</th></tr>
+    ${Object.entries(zs).filter(([, o]) => o.n).map(([z, o]) => `<tr><td>${esc(z)}</td><td>${o.n}</td><td>${fx(o.l / o.n)}</td><td>${fx(o.q, 3)}</td><td>${fx(o.v, 1)}</td></tr>`).join("") || '<tr><td colspan="5">لا توجد بيانات</td></tr>'}</table>
+    <h3>ثالثاً: تفصيل قراءات المناسيب</h3>
+    <table><tr><th>التاريخ</th><th>الهندسة</th><th>الموقع</th><th>المنسوب (م)</th><th>التصرف (م³/ث)</th><th>الحجم (ألف م³/يوم)</th><th>ملاحظات</th></tr>
+    ${sorted.map((r) => `<tr><td>${esc(r.date)}</td><td>${esc(r.zone)}</td><td>${esc(r.canalName)}</td><td>${fx(r.level)}</td><td>${fx(r.dischargeCms, 3)}</td><td>${fx(r.dailyVolumeK, 1)}</td><td>${esc(r.notes)}</td></tr>`).join("") || '<tr><td colspan="7">لا توجد قراءات</td></tr>'}</table>
+    <h3>رابعاً: موقف أعمال التطهير</h3>
+    <div class="kv"><div><b>${cs.total}</b>إجمالي الأعمال</div><div><b>${cs.done}</b>مكتمل</div><div><b>${cs.run}</b>جاري</div><div><b>${cs.none}</b>لم يبدأ</div><div><b>${cs.prog}%</b>نسبة الإنجاز</div><div><b>${fx(cs.len, 1)} كم</b>إجمالي الأطوال</div></div>
+    <table><tr><th>الهندسة</th><th>الموقع</th><th>من كم</th><th>إلى كم</th><th>الطول</th><th>الإنجاز</th><th>الحالة</th><th>الإحداثيات (بداية)</th><th>ملاحظات</th></tr>
+    ${cl.map((c) => `<tr><td>${esc(c.zone)}</td><td>${esc(c.name)}</td><td>${esc(c.kmFrom)}</td><td>${esc(c.kmTo)}</td><td>${fx(c.lengthKm, 1)}</td><td>${esc(c.progress)}%</td><td>${esc(c.status)}</td><td>${!isNaN(parseFloat(c.lat)) ? esc(fx(c.lat, 5) + "، " + fx(c.lng, 5)) : "-"}</td><td>${esc(c.notes)}</td></tr>`).join("") || '<tr><td colspan="9">لا توجد أعمال تطهير</td></tr>'}</table>
+    <h3>خامساً: التوصيات</h3><p>${nl2br(m.recs)}</p>
+    <div class="sig"><div>إعداد<br>${esc(u.name)}</div><div>يعتمد،،<br>${esc(m.director)}<br>مدير عام الإدارة العامة للموارد المائية والري بجنوب الوادي بتوشكى</div></div></div>`;
+}
+function pgReport(c) {
+  const isAdmin = sys.currentUser.role === "admin", f = state.rep, m = state.meta;
+  c.innerHTML = `
+    ${head("التقرير النهائي", "يُجمّع التقرير تلقائياً من شيت المناسيب وسجل التطهير، ويمكن تعديل المقدمة والتوصيات ثم طباعته أو حفظه")}
+    <div class="card no-print"><div class="card-h"><h3><i class="fas fa-sliders"></i> إعدادات التقرير</h3>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+        <button class="btn btn-p" id="repPrint"><i class="fas fa-print"></i> طباعة / حفظ PDF</button>
+        <button class="btn btn-t" id="repDoc"><i class="fas fa-file-word"></i> تنزيل Word</button>
+        <button class="btn btn-o" id="repCopy"><i class="fas fa-copy"></i> نسخ النص</button>
+      </div></div>
+      <div class="filters">
+        <div class="fg"><label>من تاريخ</label><input type="date" data-filter="rep.from" value="${esc(f.from)}"></div>
+        <div class="fg"><label>إلى تاريخ</label><input type="date" data-filter="rep.to" value="${esc(f.to)}"></div>
+        ${isAdmin ? `<div class="fg"><label>الهندسة</label><select data-filter="rep.zone">${zoneOpts(REAL_ZONES, f.zone, "جميع الهندسات")}</select></div>` : ""}
+        <div class="fg"><label>اسم مدير عام الإدارة (للاعتماد)</label><input type="text" data-meta="director" value="${esc(m.director)}"></div>
       </div>
+      <div id="repEditors" class="grid2">
+        <div class="fg"><label>المقدمة</label><textarea rows="5" data-meta="intro">${esc(m.intro)}</textarea></div>
+        <div class="fg"><label>التوصيات</label><textarea rows="5" data-meta="recs">${esc(m.recs)}</textarea></div>
+      </div></div>
+    <div class="rpt-box"><style>${RPT_CSS}</style><div id="repPreview">${buildReport()}</div></div>`;
+}
+function repWindowHtml() { return `<html dir="rtl" lang="ar"><head><meta charset="UTF-8"><title>التقرير النهائي</title><style>body{margin:18mm}${RPT_CSS}</style></head><body>${buildReport()}</body></html>`; }
 
-      <div class="kpi-grid">
-        <div class="kpi-card"><div class="kpi-label">إجمالي نقاط الرصد المسجلة</div><div class="kpi-value">${total} موقع</div><div class="kpi-sub">حسب صلاحية النطاق الجغرافي</div></div>
-        <div class="kpi-card accent"><div class="kpi-label">إجمالي التصرفات المحسوبة</div><div class="kpi-value">${totalQ.toFixed(2)} م³/ث</div><div class="kpi-sub">بإجمالي حجم ${totalVol.toFixed(1)} ألف م³/يوم</div></div>
-        <div class="kpi-card success"><div class="kpi-label">متوسط المناسيب المرصودة</div><div class="kpi-value">${avgLevel.toFixed(2)} م</div><div class="kpi-sub">مقاسة فوق سطح البحر</div></div>
-        <div class="kpi-card warning"><div class="kpi-label">موقف التطهيرات المكتملة</div><div class="kpi-value">${cleanPct}%</div><div class="kpi-sub">${cleanDone} من أصل ${total} موقع مطهر</div></div>
-      </div>
+// ---------- المستخدمون ----------
+function pgUsers(c) {
+  c.innerHTML = `
+    ${head("المستخدمون والصلاحيات", "إنشاء حسابات المهندسين وتحديد نطاق كل مستخدم (للأدمن فقط)")}
+    <div class="card"><div class="card-h"><h3><i class="fas fa-user-plus"></i> إضافة مستخدم</h3></div>
+      <form id="userForm" class="grid-form">
+        <div class="fg"><label>الاسم *</label><input type="text" id="uName" required></div>
+        <div class="fg"><label>البريد الإلكتروني *</label><input type="email" id="uEmail" required></div>
+        <div class="fg"><label>كلمة المرور (6 أحرف فأكثر) *</label><input type="password" id="uPass" required minlength="6" autocomplete="new-password"></div>
+        <div class="fg"><label>الصلاحية</label><select id="uRole"><option value="user">مهندس منطقة</option><option value="admin">أدمن</option></select></div>
+        <div class="fg"><label>النطاق</label><select id="uZone">${zoneOpts(ZONES, "")}</select></div>
+        <div class="fg full"><button class="btn btn-t" type="submit"><i class="fas fa-user-plus"></i> إنشاء المستخدم</button></div>
+      </form></div>
+    <div class="card"><div class="card-h"><h3><i class="fas fa-users"></i> المستخدمون (${sys.users.length})</h3></div>
+      <div class="wrap"><table class="t"><thead><tr><th>الاسم</th><th>البريد</th><th>الصلاحية</th><th>النطاق</th><th></th></tr></thead><tbody>
+      ${sys.users.map((u) => `<tr><td>${esc(u.name)}</td><td>${esc(u.email)}</td>
+        <td><select data-uid="${esc(u.uid)}" data-uf="role"><option value="user" ${u.role === "user" ? "selected" : ""}>مهندس منطقة</option><option value="admin" ${u.role === "admin" ? "selected" : ""}>أدمن</option></select></td>
+        <td><select data-uid="${esc(u.uid)}" data-uf="zone">${zoneOpts(ZONES, u.zone)}</select></td>
+        <td><button class="btn btn-t btn-sm" data-saveuser="${esc(u.uid)}"><i class="fas fa-check"></i> حفظ</button></td></tr>`).join("")}
+      </tbody></table></div></div>`;
+}
 
-      <div class="card">
-        <div class="card-header"><h3 class="card-title">📌 الملخص التنفيذي حسب الهندسات / المناطق</h3></div>
-        <div class="excel-wrap">
-          <table class="excel-table">
-            <thead><tr><th>المنطقة / الهندسة</th><th>عدد المواقع</th><th>متوسط المنسوب (م)</th><th>إجمالي التصرف (م³/ث)</th><th>الحجم اليومي (ألف م³/يوم)</th></tr></thead>
-            <tbody>
-              ${Object.keys(byZone).length
-                ? Object.entries(byZone).map(([z, i]) => `
-                  <tr><td><strong>${esc(z)}</strong></td><td>${i.count}</td>
-                  <td>${(i.levels.reduce((a, b) => a + b, 0) / i.levels.length).toFixed(2)}</td>
-                  <td><strong>${i.qCms.toFixed(3)}</strong></td><td>${i.volK.toFixed(2)}</td></tr>`).join("")
-                : `<tr><td colspan="5" style="text-align:center; padding:1.5rem;">لا توجد بيانات مسجلة في هذا النطاق بعد.</td></tr>`}
-            </tbody>
-          </table>
-        </div>
-      </div>`;
+// =====================================================================
+// 8. الإطار العام والتوجيه
+// =====================================================================
+function renderApp() {
+  $("authScreen").style.display = "none"; $("appShell").classList.add("on");
+  const u = sys.currentUser;
+  $("sbName").textContent = u.name; $("sbZone").textContent = "النطاق: " + u.zone;
+  const b = $("sbRole");
+  if (u.role === "admin") { b.textContent = "أدمن — تحكم كامل"; b.className = "role"; } else { b.textContent = "مهندس منطقة — نطاق محدد"; b.className = "role eng"; }
+  $("topDate").innerHTML = '<i class="fas fa-calendar-day"></i> ' + esc(arDate());
+  renderRoute();
+}
+function renderRoute() {
+  if (!sys.currentUser) return;
+  const key = curRoute(), r = ROUTES[key];
+  $("menu").innerHTML = '<div class="menu-label">القائمة الرئيسية</div>' +
+    Object.entries(ROUTES).filter(([, x]) => !x.admin || sys.currentUser.role === "admin")
+      .map(([k, x]) => `<a href="#/${k}" class="${k === key ? "active" : ""}"><i class="fas ${x.icon}"></i><span>${x.title}</span></a>`).join("");
+  const y = window.scrollY;
+  if (key !== "dashboard" && key !== "cleaning") destroyMap();
+  r.render($("view"));
+  if (isRefresh) window.scrollTo(0, y); else window.scrollTo(0, 0);
+  $("sidebar").classList.remove("open");
+}
+
+// =====================================================================
+// 9. التصدير
+// =====================================================================
+function download(name, content, type) {
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([content], { type }));
+  a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+}
+function xlsHtml(head, body) {
+  return "\ufeff" + `<html dir="rtl"><head><meta charset="UTF-8"></head><body><table border="1"><tr>${head.map((h) => `<th>${esc(h)}</th>`).join("")}</tr>${body.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join("")}</tr>`).join("")}</table></body></html>`;
+}
+function exportExcel() {
+  if (curRoute() === "cleaning") {
+    const rows = sys.cleanings.visible().map((c) => [c.zone, c.name, c.kmFrom, c.kmTo, c.lengthKm, c.progress, c.status, c.startDate, c.endDate, c.lat, c.lng, c.lat2, c.lng2, c.notes, c.updatedBy]);
+    download(`toshka_cleaning_${todayISO()}.xls`, xlsHtml(["الهندسة","الموقع","من كم","إلى كم","الطول","الإنجاز %","الحالة","البدء","الانتهاء المتوقع","خط العرض (بداية)","خط الطول (بداية)","خط العرض (نهاية)","خط الطول (نهاية)","ملاحظات","بواسطة"], rows), "application/vnd.ms-excel;charset=utf-8");
+  } else {
+    const rows = sys.records.visible().map((r) => [r.date, r.zone, r.canalName, r.level, r.datumH0, r.coefC, r.expN, r.dischargeCms, r.dailyVolumeK, r.notes, r.updatedBy]);
+    download(`toshka_levels_${todayISO()}.xls`, xlsHtml(["التاريخ","الهندسة","الموقع","المنسوب H","H0","C","n","التصرف (م³/ث)","الحجم (ألف م³/يوم)","ملاحظات","بواسطة"], rows), "application/vnd.ms-excel;charset=utf-8");
   }
+}
+function exportJson() {
+  download(`toshka_backup_${todayISO()}.json`, JSON.stringify({ exportedAt: new Date().toISOString(), records: sys.records.visible(), cleanings: sys.cleanings.visible() }, null, 2), "application/json");
+}
 
-  // ---------- شيت السجل ----------
-  function cleanPill(s) {
-    const cls = s === "مطهرة بالكامل" ? "pill-done" : s === "جاري التطهير" ? "pill-prog" : "pill-need";
-    return `<span class="pill ${cls}">${esc(s)}</span>`;
-  }
+// =====================================================================
+// 10. الأحداث
+// =====================================================================
+function showLoginErr(m) { const e = $("loginError"); e.textContent = m || ""; e.classList.toggle("show", !!m); }
 
-  function renderExcelSheet(container) {
-    const isAdmin = sys.currentUser.role === "admin";
-    const rows = sys.getVisibleRecords();
-    const zoneOptions = isAdmin ? ZONES.filter((z) => !z.startsWith("جميع")) : [sys.currentUser.zone];
+function wire() {
+  $("loginDate").textContent = arDate();
+  if (!ENABLE_DEMO_LOGIN) $("demoBox").style.display = "none";
+  $("loginForm").addEventListener("submit", async (e) => {
+    e.preventDefault(); showLoginErr("");
+    const b = $("loginBtn"), t = b.innerHTML; b.disabled = true; b.textContent = "جاري التحقق...";
+    try { await sys.login($("loginEmail").value, $("loginPassword").value); }
+    catch (err) { showLoginErr(err.message || "تعذر تسجيل الدخول."); }
+    finally { b.disabled = false; b.innerHTML = t; }
+  });
+  $("demoAdminBtn").onclick = () => sys.loginDemo("admin");
+  $("demoEngBtn").onclick = () => sys.loginDemo("user");
+  $("logoutBtn").onclick = () => sys.logout();
+  $("menuBtn").onclick = () => $("sidebar").classList.toggle("open");
+  $("exportXlsBtn").onclick = exportExcel;
+  $("exportJsonBtn").onclick = exportJson;
+  window.addEventListener("hashchange", () => { isRefresh = false; renderRoute(); });
 
-    container.innerHTML = `
-      <div class="card">
-        <div class="card-header"><h3 class="card-title">➕ إضافة قراءة منسوب جديدة (يُحسب التصرف تلقائياً من المنسوب)</h3></div>
-        <form id="addRecordForm" class="grid-form">
-          <div class="form-group"><label>التاريخ *</label><input type="date" id="recDate" required value="${getTodayISO()}" /></div>
-          <div class="form-group"><label>المنطقة / الهندسة *</label>
-            <select id="recZone" ${isAdmin ? "" : "disabled"}>${zoneOptions.map((z) => `<option value="${esc(z)}">${esc(z)}</option>`).join("")}</select></div>
-          <div class="form-group"><label>اسم الترعة / الموقع الهيدروليكي *</label><input type="text" id="recCanal" required placeholder="مثال: فم ترعة فرع 4" /></div>
-          <div class="form-group"><label>المنسوب المقاس H (متر) *</label><input type="number" step="0.01" id="recLevel" required placeholder="178.20" /></div>
-          <div class="form-group"><label>منسوب العتب H0 (م)</label><input type="number" step="0.01" id="recH0" value="175.00" /></div>
-          <div class="form-group"><label>معامل المعايرة C</label><input type="number" step="0.1" id="recC" value="12.5" /></div>
-          <div class="form-group"><label>الأس n</label><input type="number" step="0.01" id="recN" value="1.5" /></div>
-          <div class="form-group"><label>التصرف المحسوب (م³/ث)</label>
-            <input type="text" id="recCalcPreview" readonly style="background:#e8f1f8; font-weight:800; color:#0b4a7d;" value="0.000" /></div>
-          <div class="form-group"><label>حالة التطهير</label>
-            <select id="recStatus">${CLEAN_OPTIONS.map((o) => `<option value="${o}">${o}</option>`).join("")}</select></div>
-          <div class="form-group full"><label>ملاحظات</label><input type="text" id="recNotes" placeholder="ملاحظات ميدانية (اختياري)" /></div>
-          <div class="form-group full"><button type="submit" class="btn btn-primary">💾 حفظ القراءة في السجل</button></div>
-        </form>
-      </div>
+  const view = $("view");
 
-      <div class="card">
-        <div class="card-header"><h3 class="card-title">📋 سجل المناسيب والتصرفات (${rows.length} سجل) — عدّل أي خلية ثم اضغط Enter أو انتقل لخلية أخرى</h3></div>
-        <div class="excel-wrap">
-          <table class="excel-table">
-            <thead><tr>
-              <th>التاريخ</th><th>المنطقة</th><th>الموقع</th><th>المنسوب H</th><th>H0</th><th>C</th><th>n</th>
-              <th>التصرف (م³/ث)</th><th>الحجم (ألف م³/يوم)</th><th>التطهير</th><th>ملاحظات</th><th>آخر تعديل بواسطة</th><th>حذف</th>
-            </tr></thead>
-            <tbody>
-              ${rows.length ? rows.map((r) => `
-                <tr>
-                  <td>${esc(r.date)}</td>
-                  <td>${esc(r.zone)}</td>
-                  <td><input class="cell-input" style="min-width:150px" data-id="${esc(r.id)}" data-field="canalName" value="${esc(r.canalName)}" /></td>
-                  <td><input class="cell-input" type="number" step="0.01" data-id="${esc(r.id)}" data-field="level" data-num="1" value="${esc(r.level)}" /></td>
-                  <td><input class="cell-input" type="number" step="0.01" data-id="${esc(r.id)}" data-field="datumH0" data-num="1" value="${esc(r.datumH0)}" /></td>
-                  <td><input class="cell-input" type="number" step="0.1" data-id="${esc(r.id)}" data-field="coefC" data-num="1" value="${esc(r.coefC)}" /></td>
-                  <td><input class="cell-input" type="number" step="0.01" data-id="${esc(r.id)}" data-field="expN" data-num="1" value="${esc(r.expN)}" /></td>
-                  <td><strong>${(parseFloat(r.dischargeCms) || 0).toFixed(3)}</strong></td>
-                  <td>${(parseFloat(r.dailyVolumeK) || 0).toFixed(2)}</td>
-                  <td>
-                    <select class="cell-input" data-id="${esc(r.id)}" data-field="cleaningStatus">
-                      ${CLEAN_OPTIONS.map((o) => `<option value="${o}" ${o === r.cleaningStatus ? "selected" : ""}>${o}</option>`).join("")}
-                    </select>
-                  </td>
-                  <td><input class="cell-input" style="min-width:200px" data-id="${esc(r.id)}" data-field="notes" value="${esc(r.notes)}" /></td>
-                  <td style="font-size:.76rem; color:var(--muted)">${esc(r.updatedBy)}</td>
-                  <td><button class="btn btn-danger" data-del="${esc(r.id)}">🗑️</button></td>
-                </tr>`).join("")
-              : `<tr><td colspan="13" style="text-align:center; padding:1.5rem;">لا توجد سجلات بعد.</td></tr>`}
-            </tbody>
-          </table>
-        </div>
-      </div>`;
-    updateCalcPreview();
-  }
+  view.addEventListener("input", (e) => {
+    const t = e.target;
+    if (["rLevel", "rC", "rH0", "rN"].includes(t.id)) prevRec();
+    if (t.id === "cProg") $("cProgOut").textContent = t.value + "%";
+    if (t.closest && t.closest("#calcForm")) calcManning();
+    if (t.dataset && t.dataset.meta) {
+      state.meta[t.dataset.meta] = t.value; sys._saveLocal("meta", state.meta);
+      const p = $("repPreview"); if (p) p.innerHTML = buildReport();
+    }
+  });
 
-  function updateCalcPreview() {
-    const p = $("recCalcPreview");
-    if (!p) return;
-    const c = calculateDischargeFromLevel($("recLevel").value, $("recC").value, $("recH0").value, $("recN").value);
-    p.value = `${c.qCms.toFixed(3)}  (${c.dailyThousandM3.toFixed(1)} ألف م³/يوم)`;
-  }
-
-  // ---------- المذكرة ----------
-  function buildMemoText() {
-    const rows = sys.getVisibleRecords();
-    const byZone = {};
-    rows.forEach((r) => {
-      const z = (byZone[r.zone] = byZone[r.zone] || { n: 0, q: 0, v: 0, l: 0, done: 0, prog: 0, need: 0, notes: [] });
-      z.n++; z.q += parseFloat(r.dischargeCms) || 0; z.v += parseFloat(r.dailyVolumeK) || 0; z.l += parseFloat(r.level) || 0;
-      if (r.cleaningStatus === "مطهرة بالكامل") z.done++; else if (r.cleaningStatus === "جاري التطهير") z.prog++; else z.need++;
-      if (r.notes) z.notes.push(`${r.canalName}: ${r.notes}`);
-    });
-    const totalQ = rows.reduce((s, r) => s + (parseFloat(r.dischargeCms) || 0), 0);
-    const totalV = rows.reduce((s, r) => s + (parseFloat(r.dailyVolumeK) || 0), 0);
-
-    let t = `وزارة الموارد المائية والري\nالإدارة العامة للموارد المائية والري بجنوب الوادي بتوشكى\n\n`;
-    t += `التاريخ: ${getArabicDateFull()}\nالنطاق: ${sys.currentUser.zone}\n\n`;
-    t += `مذكرة بشأن: موقف المناسيب والتصرفات والتطهيرات بالهندسات\n\n`;
-    t += `السيد الأستاذ الدكتور / رئيس الإدارة المركزية\nتحية طيبة وبعد،\n\n`;
-    t += `نتشرف بالإحاطة بموقف المناسيب والتصرفات المائية المرصودة، وذلك على النحو التالي:\n\n`;
-    t += `أولاً: الموقف العام\n- عدد نقاط الرصد: ${rows.length}\n- إجمالي التصرفات المحسوبة: ${totalQ.toFixed(2)} م³/ث\n- إجمالي الحجم اليومي: ${totalV.toFixed(1)} ألف م³/يوم\n\n`;
-    t += `ثانياً: الموقف بالهندسات\n`;
-    const zs = Object.entries(byZone);
-    if (!zs.length) t += "- لا توجد بيانات مسجلة.\n";
-    zs.forEach(([z, i], idx) => {
-      t += `${idx + 1}. ${z}: ${i.n} موقع، متوسط المنسوب ${(i.l / i.n).toFixed(2)} م، التصرف ${i.q.toFixed(3)} م³/ث، الحجم ${i.v.toFixed(1)} ألف م³/يوم.\n`;
-      t += `   التطهير: مكتمل ${i.done} | جاري ${i.prog} | يحتاج ${i.need}\n`;
-      i.notes.forEach((n) => (t += `   - ${n}\n`));
-    });
-    t += `\nثالثاً: التوصيات\n- استمرار المتابعة اليومية للمناسيب والتصرفات.\n- سرعة الانتهاء من أعمال التطهير بالمواقع المتأخرة.\n\nوتفضلوا بقبول فائق الاحترام،\n\n${sys.currentUser.name}`;
-    return t;
-  }
-
-  function renderMemoBuilder(container) {
-    container.innerHTML = `
-      <div class="card">
-        <div class="card-header">
-          <h3 class="card-title">📝 المذكرة الشاملة بالملخص (قابلة للتعديل)</h3>
-          <div style="display:flex; gap:.5rem; flex-wrap:wrap;">
-            <button class="btn btn-outline btn-sm" id="memoRegen">🔄 إعادة التوليد من البيانات</button>
-            <button class="btn btn-outline btn-sm" id="memoCopy">📋 نسخ</button>
-            <button class="btn btn-primary btn-sm" id="memoPrint">🖨️ طباعة</button>
-          </div>
-        </div>
-        <textarea id="memoText" class="memo-area">${esc(buildMemoText())}</textarea>
-      </div>`;
-  }
-
-  // ---------- إدارة المستخدمين ----------
-  function renderAdminUsers(container) {
-    if (sys.currentUser.role !== "admin") { container.innerHTML = ""; return; }
-    container.innerHTML = `
-      <div class="card">
-        <div class="card-header"><h3 class="card-title">➕ إضافة مستخدم جديد</h3></div>
-        <form id="createUserForm" class="grid-form">
-          <div class="form-group"><label>الاسم *</label><input type="text" id="nuName" required /></div>
-          <div class="form-group"><label>البريد الإلكتروني *</label><input type="email" id="nuEmail" required /></div>
-          <div class="form-group"><label>كلمة المرور (6 أحرف فأكثر) *</label><input type="password" id="nuPass" required minlength="6" autocomplete="new-password" /></div>
-          <div class="form-group"><label>الصلاحية</label>
-            <select id="nuRole"><option value="user">مهندس منطقة</option><option value="admin">أدمن</option></select></div>
-          <div class="form-group"><label>النطاق</label>
-            <select id="nuZone">${ZONES.map((z) => `<option value="${esc(z)}">${esc(z)}</option>`).join("")}</select></div>
-          <div class="form-group full"><button type="submit" class="btn btn-primary">إنشاء المستخدم</button></div>
-        </form>
-      </div>
-      <div class="card">
-        <div class="card-header"><h3 class="card-title">👥 المستخدمون (${sys.users.length})</h3></div>
-        <div class="excel-wrap">
-          <table class="excel-table">
-            <thead><tr><th>الاسم</th><th>البريد</th><th>الصلاحية</th><th>النطاق</th><th>حفظ</th></tr></thead>
-            <tbody>
-              ${sys.users.map((u) => `
-                <tr>
-                  <td>${esc(u.name)}</td><td>${esc(u.email)}</td>
-                  <td><select data-uid="${esc(u.uid)}" data-f="role">
-                    <option value="user" ${u.role === "user" ? "selected" : ""}>مهندس منطقة</option>
-                    <option value="admin" ${u.role === "admin" ? "selected" : ""}>أدمن</option></select></td>
-                  <td><select data-uid="${esc(u.uid)}" data-f="zone">
-                    ${ZONES.map((z) => `<option value="${esc(z)}" ${z === u.zone ? "selected" : ""}>${esc(z)}</option>`).join("")}</select></td>
-                  <td><button class="btn btn-accent btn-sm" data-saveuser="${esc(u.uid)}">حفظ</button></td>
-                </tr>`).join("")}
-            </tbody>
-          </table>
-        </div>
-      </div>`;
-  }
-
-  // ===================================================================
-  // 6. التصدير
-  // ===================================================================
-  function download(filename, content, type) {
-    const blob = new Blob([content], { type });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  }
-
-  function exportExcel() {
-    const rows = sys.getVisibleRecords();
-    const head = ["التاريخ","المنطقة","الموقع","المنسوب H","H0","C","n","التصرف (م³/ث)","الحجم (ألف م³/يوم)","التطهير","ملاحظات","بواسطة"];
-    const body = rows.map((r) => [r.date, r.zone, r.canalName, r.level, r.datumH0, r.coefC, r.expN, r.dischargeCms, r.dailyVolumeK, r.cleaningStatus, r.notes, r.updatedBy]);
-    const html = `<html dir="rtl" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"></head><body>
-      <table border="1"><tr>${head.map((h) => `<th>${esc(h)}</th>`).join("")}</tr>
-      ${body.map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</table></body></html>`;
-    download(`toshka_records_${getTodayISO()}.xls`, "\ufeff" + html, "application/vnd.ms-excel;charset=utf-8");
-  }
-
-  function exportJson() {
-    download(`toshka_backup_${getTodayISO()}.json`, JSON.stringify({ exportedAt: new Date().toISOString(), records: sys.getVisibleRecords() }, null, 2), "application/json");
-  }
-
-  // ===================================================================
-  // 7. ربط الأحداث
-  // ===================================================================
-  function showLoginError(msg) {
-    const el = $("loginError");
-    el.textContent = msg || "";
-    el.classList.toggle("show", !!msg);
-  }
-
-  function wireEvents() {
-    $("loginDateDisplay").textContent = "📅 " + getArabicDateFull();
-    if (!ENABLE_DEMO_LOGIN) $("demoBox").style.display = "none";
-
-    $("loginForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      showLoginError("");
-      const btn = $("loginBtn");
-      btn.disabled = true;
-      const oldText = btn.textContent;
-      btn.textContent = "جاري التحقق...";
+  view.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const id = e.target.id;
+    if (id === "addRecordForm") {
+      const level = parseFloat($("rLevel").value);
+      if (isNaN(level)) return toast("أدخل منسوباً صحيحاً.");
+      await sys.records.add({ date: $("rDate").value || todayISO(), zone: $("rZone").value, canalName: $("rCanal").value.trim(), level,
+        datumH0: num($("rH0").value), coefC: num($("rC").value, 12.5), expN: num($("rN").value, 1.5), notes: $("rNotes").value.trim() });
+      toast("تم حفظ القراءة");
+      $("rCanal").value = ""; $("rLevel").value = ""; $("rNotes").value = ""; prevRec();
+    } else if (id === "cleanForm") {
+      const lat = $("cLat").value, lng = $("cLng").value;
+      if ((lat && (num(lat) < -90 || num(lat) > 90)) || (lng && (num(lng) < -180 || num(lng) > 180))) return toast("إحداثيات غير صحيحة.");
+      await sys.cleanings.add({ zone: $("cZone").value, name: $("cName").value.trim(), kmFrom: num($("cKm1").value), kmTo: num($("cKm2").value),
+        startDate: $("cStart").value, endDate: $("cEnd").value, progress: num($("cProg").value),
+        lat: lat === "" ? "" : num(lat), lng: lng === "" ? "" : num(lng), lat2: $("cLat2").value === "" ? "" : num($("cLat2").value), lng2: $("cLng2").value === "" ? "" : num($("cLng2").value),
+        notes: $("cNotes").value.trim() });
+      toast("تم حفظ عمل التطهير");
+    } else if (id === "userForm") {
       try {
-        await sys.login($("loginEmail").value, $("loginPassword").value);
-      } catch (err) {
-        showLoginError(err.message || "تعذر تسجيل الدخول.");
-      } finally {
-        btn.disabled = false;
-        btn.textContent = oldText;
-      }
-    });
+        await sys.createUser({ name: $("uName").value.trim(), email: $("uEmail").value, password: $("uPass").value, role: $("uRole").value, zone: $("uZone").value });
+        toast("تم إنشاء المستخدم");
+      } catch (err) { toast(err.message); }
+    }
+  });
 
-    $("demoAdminBtn").addEventListener("click", () => sys.loginDemo("admin"));
-    $("demoEngBtn").addEventListener("click", () => sys.loginDemo("user"));
-    $("logoutBtn").addEventListener("click", () => sys.logout());
-    $("menuToggle").addEventListener("click", () => $("sidebar").classList.toggle("open"));
-    $("exportExcelBtn").addEventListener("click", exportExcel);
-    $("exportJsonBtn").addEventListener("click", exportJson);
+  view.addEventListener("change", (e) => {
+    const t = e.target, d = t.dataset || {};
+    if (d.filter) {
+      const [ns, k] = d.filter.split("."); state[ns][k] = t.value;
+      if (ns === "rep") { const p = $("repPreview"); if (p) p.innerHTML = buildReport(); } else { isRefresh = true; renderRoute(); isRefresh = false; }
+      return;
+    }
+    if ((d.id || d.cid) && d.f) {
+      const val = d.num ? parseFloat(t.value) : t.value;
+      if (d.num && isNaN(val)) { toast("قيمة رقمية غير صحيحة."); isRefresh = true; renderRoute(); isRefresh = false; return; }
+      (d.id ? sys.records : sys.cleanings).update(d.id || d.cid, { [d.f]: val });
+    }
+  });
 
-    $("navList").addEventListener("click", (e) => {
-      const b = e.target.closest(".nav-btn");
-      if (b) window._goTab(b.dataset.tab);
-    });
+  view.addEventListener("click", async (e) => {
+    const t = e.target, btn = t.closest("button, a");
+    if (!btn) return;
+    const d = btn.dataset || {};
+    if (d.clear) { state[d.clear] = { from: "", to: "", q: "", zone: "" }; renderRoute(); return; }
+    if (d.del) {
+      if (confirm("هل تريد حذف هذا السجل؟")) { await sys[d.store].remove(d.del); toast("تم الحذف"); }
+      return;
+    }
+    if (d.locate && mapInst && mapLayers[d.locate]) {
+      mapInst.flyTo(mapLayers[d.locate].A, 14); window.scrollTo({ top: $("clMap").getBoundingClientRect().top + window.scrollY - 90, behavior: "smooth" });
+      return;
+    }
+    if (btn.id === "geoBtn") {
+      if (!navigator.geolocation) return toast("المتصفح لا يدعم تحديد الموقع.");
+      navigator.geolocation.getCurrentPosition((p) => {
+        $("cLat").value = p.coords.latitude.toFixed(6); $("cLng").value = p.coords.longitude.toFixed(6);
+        if (mapInst) mapInst.flyTo([p.coords.latitude, p.coords.longitude], 13); toast("تم تحديد موقعك");
+      }, () => toast("تعذر الحصول على الموقع (تحقق من الإذن)."));
+      return;
+    }
+    if (d.saveuser) {
+      const uid = d.saveuser, q = (f) => view.querySelector(`select[data-uid="${CSS.escape(uid)}"][data-uf="${f}"]`).value;
+      await sys.updateUser(uid, q("zone"), q("role")); toast("تم حفظ الصلاحيات"); return;
+    }
+    if (btn.id === "repPrint") {
+      const w = window.open("", "_blank"); if (!w) return toast("اسمح بالنوافذ المنبثقة للطباعة.");
+      w.document.write(repWindowHtml()); w.document.close(); w.focus(); setTimeout(() => w.print(), 400); return;
+    }
+    if (btn.id === "repDoc") { download(`toshka_report_${todayISO()}.doc`, "\ufeff" + repWindowHtml(), "application/msword;charset=utf-8"); return; }
+    if (btn.id === "repCopy") {
+      const txt = $("repPreview").innerText;
+      try { await navigator.clipboard.writeText(txt); } catch (x) { const ta = document.createElement("textarea"); ta.value = txt; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); }
+      toast("تم نسخ التقرير"); return;
+    }
+  });
 
-    const main = $("mainContent");
+  // إعادة الرسم عند تغير البيانات (بدون مقاطعة النماذج)
+  sys.subscribe(() => {
+    if (!sys.currentUser) return;
+    const a = document.activeElement;
+    if (a && a.closest && (a.closest("form") || a.closest("#repEditors") || a.closest(".filters"))) return;
+    isRefresh = true; renderRoute(); isRefresh = false;
+  });
+}
 
-    main.addEventListener("input", (e) => {
-      if (["recLevel", "recH0", "recC", "recN"].includes(e.target.id)) updateCalcPreview();
-    });
-
-    main.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      if (e.target.id === "addRecordForm") {
-        const level = parseFloat($("recLevel").value);
-        if (isNaN(level)) { showToast("أدخل منسوباً صحيحاً."); return; }
-        await sys.addRecord({
-          date: $("recDate").value || getTodayISO(),
-          zone: $("recZone").value,
-          canalName: $("recCanal").value.trim(),
-          level,
-          datumH0: parseFloat($("recH0").value),
-          coefC: parseFloat($("recC").value),
-          expN: parseFloat($("recN").value),
-          cleaningStatus: $("recStatus").value,
-          notes: $("recNotes").value.trim()
-        });
-        showToast("✅ تم حفظ القراءة");
-      } else if (e.target.id === "createUserForm") {
-        try {
-          await sys.adminCreateUser({
-            name: $("nuName").value.trim(), email: $("nuEmail").value, password: $("nuPass").value,
-            role: $("nuRole").value, zone: $("nuZone").value
-          });
-          showToast("✅ تم إنشاء المستخدم");
-        } catch (err) { showToast("❌ " + err.message); }
-      }
-    });
-
-    main.addEventListener("change", (e) => {
-      const t = e.target;
-      if (t.dataset && t.dataset.id && t.dataset.field) {
-        const val = t.dataset.num ? parseFloat(t.value) : t.value;
-        if (t.dataset.num && isNaN(val)) { showToast("قيمة رقمية غير صحيحة."); renderActiveTab(); return; }
-        sys.updateRecord(t.dataset.id, { [t.dataset.field]: val });
-      }
-    });
-
-    main.addEventListener("click", async (e) => {
-      const del = e.target.closest("[data-del]");
-      if (del) {
-        if (confirm("هل تريد حذف هذا السجل؟")) { await sys.deleteRecord(del.dataset.del); showToast("🗑️ تم الحذف"); }
-        return;
-      }
-      const sv = e.target.closest("[data-saveuser]");
-      if (sv) {
-        const uid = sv.dataset.saveuser;
-        const zone = main.querySelector(`select[data-uid="${CSS.escape(uid)}"][data-f="zone"]`).value;
-        const role = main.querySelector(`select[data-uid="${CSS.escape(uid)}"][data-f="role"]`).value;
-        await sys.adminUpdateUser(uid, zone, role);
-        showToast("✅ تم حفظ الصلاحيات");
-        return;
-      }
-      if (e.target.id === "memoRegen") { $("memoText").value = buildMemoText(); }
-      if (e.target.id === "memoCopy") {
-        try { await navigator.clipboard.writeText($("memoText").value); showToast("📋 تم النسخ"); }
-        catch (err) { $("memoText").select(); document.execCommand("copy"); showToast("📋 تم النسخ"); }
-      }
-      if (e.target.id === "memoPrint") {
-        const w = window.open("", "_blank");
-        if (!w) { showToast("اسمح بالنوافذ المنبثقة للطباعة."); return; }
-        w.document.write(`<html dir="rtl" lang="ar"><head><meta charset="UTF-8"><title>مذكرة</title></head>
-          <body style="font-family:Tahoma,Arial,sans-serif; line-height:2; padding:2cm; white-space:pre-wrap;">${esc($("memoText").value)}</body></html>`);
-        w.document.close();
-        w.focus();
-        w.print();
-      }
-    });
-
-    // إعادة الرسم عند تغير البيانات دون مقاطعة الكتابة
-    sys.subscribe(() => {
-      if (!sys.currentUser) return;
-      const a = document.activeElement;
-      if (a && a.closest && (a.closest("#addRecordForm") || a.closest("#createUserForm") || a.id === "memoText")) return;
-      renderActiveTab();
-    });
-  }
-
-  (async function boot() {
-    wireEvents();
-    await sys.init();
-  })();
-  </script>
+(async function boot() { wire(); await sys.init(); })();
+</script>
 </body>
+</html>
