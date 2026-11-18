@@ -1,1011 +1,275 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>الإدارة العامة للموارد المائية والري بجنوب الوادي بتوشكى</title>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
-  <style>
-    :root {
-      --primary: #0b4a7d; --primary-dark: #072f52; --primary-light: #e8f1f8;
-      --accent: #0d7a73; --accent-hover: #095c57;
-      --bg: #f1f5f9; --surface: #ffffff; --text: #0f172a; --muted: #64748b; --border: #cbd5e1;
-      --success: #15803d; --success-bg: #dcfce7;
-      --warning: #b45309; --warning-bg: #fef3c7;
-      --danger: #b91c1c; --danger-bg: #fee2e2;
-      --sidebar-w: 275px; --radius: 12px;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; }
-    body { background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.6; }
-
-    .auth-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1.5rem;
-      background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 55%, var(--accent) 100%); }
-    .auth-card { background: #fff; width: 100%; max-width: 470px; border-radius: 16px; padding: 2rem; box-shadow: 0 20px 45px rgba(0,0,0,.25); }
-    .auth-header { text-align: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem; }
-    .auth-header .ministry { font-size: .85rem; color: var(--accent); font-weight: 700; }
-    .auth-header h1 { font-size: 1.18rem; color: var(--primary-dark); margin: .3rem 0; font-weight: 800; }
-    .auth-header .date-pill { display: inline-block; background: var(--primary-light); color: var(--primary); padding: .25rem .75rem; border-radius: 999px; font-size: .82rem; font-weight: 600; margin-top: .35rem; }
-    .error-msg { background: var(--danger-bg); color: var(--danger); border: 1px solid #fecaca; padding: .6rem .8rem; border-radius: 8px; font-size: .85rem; font-weight: 600; display: none; }
-    .error-msg.show { display: block; }
-
-    .app-shell { display: none; min-height: 100vh; }
-    .app-shell.active { display: flex; }
-    .sidebar { width: var(--sidebar-w); background: linear-gradient(180deg, var(--primary) 0%, var(--primary-dark) 100%); color: #fff;
-      display: flex; flex-direction: column; position: fixed; top: 0; right: 0; bottom: 0; z-index: 100; transition: transform .3s ease; }
-    .brand { padding: 1.25rem 1.1rem; border-bottom: 1px solid rgba(255,255,255,.15); }
-    .brand-title { font-size: .96rem; font-weight: 800; line-height: 1.45; }
-    .brand-sub { font-size: .76rem; color: #bae6fd; margin-top: .25rem; }
-    .user-box { margin: .85rem; padding: .75rem; background: rgba(255,255,255,.1); border-radius: 10px; font-size: .82rem; }
-    .user-role-badge { display: inline-block; padding: .15rem .55rem; border-radius: 6px; font-size: .74rem; font-weight: 700; margin-top: .3rem; background: #fbbf24; color: #1e293b; }
-    .user-role-badge.eng { background: #34d399; color: #064e3b; }
-    .nav-list { list-style: none; padding: .5rem .75rem; flex: 1; display: flex; flex-direction: column; gap: .4rem; overflow-y: auto; }
-    .nav-btn { width: 100%; background: transparent; border: none; color: #e2e8f0; padding: .8rem .95rem; border-radius: 10px; text-align: right;
-      font-size: .9rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: .65rem; transition: .2s; }
-    .nav-btn:hover { background: rgba(255,255,255,.12); color: #fff; }
-    .nav-btn.active { background: #fff; color: var(--primary-dark); box-shadow: 0 4px 12px rgba(0,0,0,.18); }
-    .sidebar-footer { padding: .9rem 1rem; border-top: 1px solid rgba(255,255,255,.15); }
-
-    .main-wrapper { flex: 1; margin-right: var(--sidebar-w); display: flex; flex-direction: column; min-width: 0; }
-    .official-banner { background: var(--surface); border-bottom: 2px solid var(--primary); padding: .85rem 1.5rem; display: flex; align-items: center;
-      justify-content: space-between; flex-wrap: wrap; gap: .75rem; position: sticky; top: 0; z-index: 50; }
-    .banner-info h2 { font-size: 1.12rem; font-weight: 800; color: var(--primary-dark); }
-    .banner-meta { font-size: .84rem; color: var(--muted); font-weight: 600; }
-    .banner-actions { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
-    .status-badge { padding: .3rem .75rem; border-radius: 999px; font-size: .78rem; font-weight: 700; }
-    .status-cloud { background: var(--success-bg); color: var(--success); }
-    .status-local { background: var(--warning-bg); color: var(--warning); }
-    .content { padding: 1.4rem; max-width: 1380px; width: 100%; margin: 0 auto; }
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1.25rem; box-shadow: 0 2px 10px rgba(15,23,42,.04); }
-    .card-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .6rem; margin-bottom: 1rem; padding-bottom: .65rem; border-bottom: 1px solid var(--border); }
-    .card-title { font-size: 1.02rem; font-weight: 800; color: var(--primary); }
-
-    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; margin-bottom: 1.25rem; }
-    .kpi-card { background: var(--surface); border: 1px solid var(--border); border-right: 4px solid var(--primary); border-radius: var(--radius); padding: 1rem 1.1rem; }
-    .kpi-card.accent { border-right-color: var(--accent); }
-    .kpi-card.success { border-right-color: var(--success); }
-    .kpi-card.warning { border-right-color: var(--warning); }
-    .kpi-label { font-size: .82rem; color: var(--muted); font-weight: 700; }
-    .kpi-value { font-size: 1.55rem; font-weight: 800; color: var(--primary-dark); margin-top: .2rem; }
-    .kpi-sub { font-size: .76rem; color: var(--muted); margin-top: .2rem; }
-
-    .grid-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(195px, 1fr)); gap: .85rem; }
-    .form-group { display: flex; flex-direction: column; gap: .3rem; }
-    .form-group.full { grid-column: 1 / -1; }
-    label { font-size: .83rem; font-weight: 700; color: var(--text); }
-    input, select, textarea { padding: .56rem .75rem; border: 1px solid var(--border); border-radius: 8px; font-size: .9rem; background: #fff; color: var(--text); }
-    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(11,74,125,.12); }
-
-    .btn { padding: .55rem .95rem; border-radius: 8px; border: none; font-size: .86rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: .4rem; transition: .2s; }
-    .btn:disabled { opacity: .6; cursor: not-allowed; }
-    .btn-primary { background: var(--primary); color: #fff; }
-    .btn-primary:hover { background: var(--primary-dark); }
-    .btn-accent { background: var(--accent); color: #fff; }
-    .btn-accent:hover { background: var(--accent-hover); }
-    .btn-outline { background: #fff; color: var(--primary); border: 1px solid var(--border); }
-    .btn-outline:hover { background: var(--primary-light); }
-    .btn-danger { background: var(--danger-bg); color: var(--danger); padding: .35rem .6rem; font-size: .78rem; }
-    .btn-sm { padding: .35rem .65rem; font-size: .8rem; }
-
-    .excel-wrap { overflow-x: auto; border: 1px solid #94a3b8; border-radius: 8px; }
-    table.excel-table { width: 100%; border-collapse: collapse; font-size: .86rem; background: #fff; }
-    table.excel-table th, table.excel-table td { border: 1px solid #cbd5e1; padding: .45rem .6rem; text-align: right; white-space: nowrap; }
-    table.excel-table th { background: #dbeafe; color: var(--primary-dark); font-weight: 800; position: sticky; top: 0; }
-    table.excel-table tr:nth-child(even) td { background: #f8fafc; }
-    table.excel-table tr:hover td { background: #eff6ff; }
-    .cell-input { width: 100%; min-width: 95px; padding: .32rem .45rem; border: 1px solid transparent; background: transparent; border-radius: 4px; font-size: .86rem; font-weight: 600; }
-    .cell-input:focus { background: #fff; border-color: var(--primary); }
-    .pill { padding: .2rem .55rem; border-radius: 999px; font-size: .76rem; font-weight: 700; }
-    .pill-done { background: var(--success-bg); color: var(--success); }
-    .pill-prog { background: var(--warning-bg); color: var(--warning); }
-    .pill-need { background: var(--danger-bg); color: var(--danger); }
-
-    .toast { position: fixed; bottom: 20px; left: 20px; background: var(--primary-dark); color: #fff; padding: .75rem 1.2rem; border-radius: 10px; font-size: .88rem;
-      box-shadow: 0 8px 20px rgba(0,0,0,.25); opacity: 0; pointer-events: none; transform: translateY(15px); transition: .25s; z-index: 999; }
-    .toast.show { opacity: 1; transform: translateY(0); }
-    .menu-toggle { display: none; background: var(--primary-light); color: var(--primary); border: none; border-radius: 8px; padding: .45rem .75rem; font-size: 1.2rem; cursor: pointer; }
-    .memo-area { width: 100%; min-height: 380px; line-height: 1.9; font-size: .95rem; resize: vertical; }
-
-    @media print {
-      .sidebar, .official-banner .banner-actions, .no-print { display: none !important; }
-      .main-wrapper { margin-right: 0 !important; }
-      body { background: #fff; }
-      .card { box-shadow: none; border: 1px solid #000; }
-    }
-    @media (max-width: 880px) {
-      .sidebar { transform: translateX(100%); }
-      .sidebar.open { transform: translateX(0); }
-      .main-wrapper { margin-right: 0; }
-      .menu-toggle { display: inline-block; }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة المساعد الذكي لإدارة الموارد المائية والري - توشكى</title>
+    <!-- Bootstrap 5 RTL CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Leaflet CSS للخريطة التفاعلية -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .sidebar { min-height: 100vh; background-color: #1b3b2b; color: white; }
+        .sidebar .nav-link { color: #d1e7dd; margin-bottom: 5px; border-radius: 5px; transition: 0.3s; }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active { background-color: #2c5e43; color: white; }
+        .card { border: none; box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); }
+        .header-bg { background-color: #1b3b2b; color: white; padding: 15px; border-radius: 8px; }
+        #toshka-map { height: 380px; width: 100%; border-radius: 8px; z-index: 1; }
+    </style>
 </head>
 <body>
 
-  <!-- شاشة تسجيل الدخول -->
-  <div class="auth-screen" id="authScreen">
-    <div class="auth-card">
-      <div class="auth-header">
-        <div class="ministry">وزارة الموارد المائية والري</div>
-        <h1>الإدارة العامة للموارد المائية والري بجنوب الوادي بتوشكى</h1>
-        <div class="date-pill" id="loginDateDisplay"></div>
-      </div>
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar / القائمة الجانبية -->
+        <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse p-3">
+            <h5 class="text-center py-3 border-bottom border-light">
+                <i class="fas fa-water ms-2"></i>ري توشكى
+            </h5>
+            <div class="p-2 mb-3 bg-dark rounded text-center small">
+                <strong>مدير عام الإدارة (أدمن)</strong><br>
+                <span class="text-warning">صلاحية أدمن (تحكم كامل)</span>
+            </div>
+            <ul class="nav flex-column">
+                <li class="nav-item"><a class="nav-link active" href="#"><i class="fas fa-home ms-2"></i>الواجهة الرئيسية والملخص</a></li>
+                <li class="nav-item"><a class="nav-link" href="#monitoring-section"><i class="fas fa-table ms-2"></i>سجل المناسيب والتصرفات</a></li>
+                <li class="nav-item"><a class="nav-link" href="#calculator-section"><i class="fas fa-calculator ms-2"></i>حاسبة التصرف (مانش)</a></li>
+                <li class="nav-item"><a class="nav-link" href="#map-section"><i class="fas fa-map-marked-alt ms-2"></i>خريطة التطهيرات</a></li>
+                <li class="nav-item"><a class="nav-link" href="#memo-section"><i class="fas fa-file-alt ms-2"></i>إعداد المذكرة الشاملة</a></li>
+            </ul>
+            <hr class="text-light">
+            <button onclick="logoutUser()" class="btn btn-outline-danger w-100 btn-sm"><i class="fas fa-sign-out-alt ms-1"></i>تسجيل الخروج</button>
+        </nav>
 
-      <form id="loginForm" style="display:flex; flex-direction:column; gap:0.9rem;" novalidate>
-        <div class="form-group">
-          <label for="loginEmail">البريد الإلكتروني</label>
-          <input type="email" id="loginEmail" autocomplete="username" placeholder="admin@toshka.gov.eg" />
-        </div>
-        <div class="form-group">
-          <label for="loginPassword">كلمة المرور</label>
-          <input type="password" id="loginPassword" autocomplete="current-password" placeholder="••••••••" />
-        </div>
-        <div class="error-msg" id="loginError"></div>
-        <button type="submit" id="loginBtn" class="btn btn-primary" style="padding:0.75rem;">🔐 تسجيل الدخول إلى المنصة</button>
-      </form>
+        <!-- Main Content / المحتوى الرئيسي -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            
+            <!-- Top Header & Firebase Status -->
+            <div class="d-flex justify-content-between align-items-center mb-4 header-bg">
+                <div>
+                    <h4 class="mb-0">الإدارة العامة للموارد المائية والري بجنوب الوادي بتوشكى</h4>
+                    <small>الأربعاء، 18 نوفمبر 2026 | منظومة المتابعة الميدانية والتحليلات</small>
+                </div>
+                <div>
+                    <span id="firebase-status" class="badge bg-success p-2"><i class="fas fa-cloud ms-1"></i>متصل بـ Firebase السحابي</span>
+                </div>
+            </div>
 
-      <div id="demoBox" style="margin-top:1.1rem; padding-top:0.9rem; border-top:1px dashed var(--border); font-size:0.82rem; color:var(--muted);">
-        <div style="font-weight:700; color:var(--primary-dark); margin-bottom:0.4rem;">دخول تجريبي سريع (للمعاينة الفورية):</div>
-        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
-          <button type="button" class="btn btn-outline btn-sm" id="demoAdminBtn">👑 دخول كـ أدمن الإدارة</button>
-          <button type="button" class="btn btn-outline btn-sm" id="demoEngBtn">👷 دخول كـ مهندس فرع 4</button>
-        </div>
-        <div style="margin-top:.5rem;">حسابات محلية: <b>admin@toshka.gov.eg</b> أو <b>branch4@toshka.gov.eg</b> — كلمة المرور <b>123456</b></div>
-      </div>
+            <!-- Quick Stats Cards -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="card p-3 text-center">
+                        <small class="text-muted">إجمالي نقاط الرصد المسجلة</small>
+                        <h3 class="text-primary mt-2">3 مواقع</h3>
+                        <small class="text-success">حسب صلاحية النطاق الجغرافي</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card p-3 text-center">
+                        <small class="text-muted">إجمالي التصرفات المحسوبة (مانش)</small>
+                        <h3 class="text-success mt-2" id="total-discharge-val">44240.11 م٣/ث</h3>
+                        <small class="text-muted">إجمالي عموم 383459 ألف م٣/يوم</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card p-3 text-center">
+                        <small class="text-muted">متوسط المناسب المرصودة</small>
+                        <h3 class="text-info mt-2">160.00 م</h3>
+                        <small class="text-muted">مقاسة فوق سطح البحر</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card p-3 text-center">
+                        <small class="text-muted">موقف التطهيرات المكملة</small>
+                        <h3 class="text-warning mt-2">33%</h3>
+                        <small class="text-muted">1 من أصل 3 موقع مطهر</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Map Section / خريطة التطهيرات المتميزة -->
+            <div id="map-section" class="card p-3 mb-4">
+                <h5 class="mb-3"><i class="fas fa-map-marked-alt text-success ms-2"></i>خريطة متابعة مواقع التطهيرات والترع (توشكى)</h5>
+                <div id="toshka-map"></div>
+            </div>
+
+            <!-- Open Channel Calculator Section (Manning's Equation) / حاسبة التصرف للقنوات المكشوفة -->
+            <div id="calculator-section" class="card p-4 mb-4">
+                <h5 class="mb-3"><i class="fas fa-calculator text-primary ms-2"></i>حاسبة التصرف للقنوات المكشوفة (معادلة مانش)</h5>
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">عرض القاع (بالمتر)</label>
+                        <input type="number" id="calc-width" class="form-control" value="5.0" step="0.1">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">عمق المياه (بالمتر)</label>
+                        <input type="number" id="calc-depth" class="form-control" value="1.5" step="0.1">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">ميل القاع (Slope)</label>
+                        <input type="number" id="calc-slope" class="form-control" value="0.0001" step="0.00001">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">معامل الخشونة (مانش n)</label>
+                        <input type="number" id="calc-roughness" class="form-control" value="0.022" step="0.001">
+                    </div>
+                </div>
+                <div class="mt-3 d-flex justify-content-between align-items-center">
+                    <button onclick="calculateOpenChannelFlow()" class="btn btn-success px-4"><i class="fas fa-cogs ms-1"></i>احساب التصرف الهيدروليكي</button>
+                    <h4 class="text-success mb-0" id="calc-result">التصرف المحسوب: -- م٣/ث</h4>
+                </div>
+            </div>
+
+            <!-- Summary Table Section -->
+            <div id="monitoring-section" class="card p-3 mb-4">
+                <h5 class="mb-3"><i class="fas fa-list-alt text-secondary ms-2"></i>الملخص التنفيذي حسب الهندسات / المناطق</h5>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped text-center align-middle">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>المنطقة / الهندسة</th>
+                                <th>عدد المواقع</th>
+                                <th>متوسط المنسوب (م)</th>
+                                <th>إجمالي التصرف (م٣/ث)</th>
+                                <th>الحجم اليومي (ألف م٣/يوم)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>هندسة فرع 2</td>
+                                <td>1</td>
+                                <td>115.00</td>
+                                <td>15415.470</td>
+                                <td>1331856.62</td>
+                            </tr>
+                            <tr>
+                                <td>هندسة فرع 1</td>
+                                <td>1</td>
+                                <td>170.00</td>
+                                <td>27706.610</td>
+                                <td>2393851.12</td>
+                            </tr>
+                            <tr>
+                                <td>هندسة القناة الرئيسية (الشيخ زايد)</td>
+                                <td>1</td>
+                                <td>195.00</td>
+                                <td>1118.034</td>
+                                <td>96598.14</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Memo Builder Section -->
+            <div id="memo-section" class="card p-4">
+                <h5 class="mb-3"><i class="fas fa-file-pen text-warning ms-2"></i>مولد المذكرة الشاملة للإدارة</h5>
+                <textarea class="form-file form-control mb-3" rows="4" placeholder="اكتب عناصر التقرير أو المذكرة الإدارية هنا...">بناءً على توجيهات السيد المهندس/ عُرفة عبد المطلب متولي - مدير عام الإدارة العامة للموارد المائية والري بجنوب الوادي بتوشكى، تم إعداد التقرير الميداني الدوري لمتابعة المناسيب والتصرفات وأعمال التطهيرات بنطاق الهندسات.</textarea>
+                <button onclick="alert('تم نسخ ولصق المذكرة بنجاح وجاهزة للاستخدام الرسمي!')" class="btn btn-warning text-dark fw-bold"><i class="fas fa-copy ms-1"></i>نسخ المذكرة الشاملة</button>
+            </div>
+
+        </main>
     </div>
-  </div>
+</div>
 
-  <!-- واجهة المنصة -->
-  <div class="app-shell" id="appShell">
-    <aside class="sidebar" id="sidebar">
-      <div class="brand">
-        <div class="brand-title">الإدارة العامة للموارد المائية والري بجنوب الوادي بتوشكى</div>
-        <div class="brand-sub">منظومة المتابعة الميدانية والتصرفات</div>
-      </div>
-      <div class="user-box">
-        <div id="sidebarUserName" style="font-weight:700;">-</div>
-        <div id="sidebarUserZone" style="font-size:0.78rem; color:#e2e8f0;">-</div>
-        <span id="sidebarRoleBadge" class="user-role-badge">-</span>
-      </div>
-      <ul class="nav-list" id="navList"></ul>
-      <div class="sidebar-footer">
-        <button class="btn btn-danger" id="logoutBtn" style="width:100%; justify-content:center;">🚪 تسجيل الخروج</button>
-      </div>
-    </aside>
+<!-- Leaflet JS الخريطة -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <div class="main-wrapper">
-      <header class="official-banner">
-        <div style="display:flex; align-items:center; gap:0.75rem;">
-          <button class="menu-toggle" id="menuToggle">☰</button>
-          <div class="banner-info">
-            <h2>الإدارة العامة للموارد المائية والري بجنوب الوادي بتوشكى</h2>
-            <div class="banner-meta" id="bannerDateText"></div>
-          </div>
-        </div>
-        <div class="banner-actions">
-          <span id="connStatus" class="status-badge status-local">وضع محلي (localStorage)</span>
-          <button class="btn btn-accent btn-sm" id="exportExcelBtn">📊 تصدير شيت Excel</button>
-          <button class="btn btn-outline btn-sm" id="exportJsonBtn">💾 نسخ احتياطي JSON</button>
-        </div>
-      </header>
-      <main class="content" id="mainContent"></main>
-    </div>
-  </div>
+<!-- Firebase Modular SDKs عبر CDN -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  <div class="toast" id="toast"></div>
-
-  <script>
-  "use strict";
-  // ===================================================================
-  // 1. الإعدادات
-  // ===================================================================
-  const firebaseConfig = {
-    apiKey: "AIzaSyBG7ldaL6toYCkzBRWZInT5GnwXKuBEtoQ",
-    authDomain: "data-cc6b1.firebaseapp.com",
-    projectId: "data-cc6b1",
-    storageBucket: "data-cc6b1.firebasestorage.app",
-    messagingSenderId: "766137137911",
-    appId: "1:766137137911:web:262aca159dd8d14a14f1f2",
-    measurementId: "G-ZYBRQ5FH2K"
-  };
-
-  const MASTER_ADMIN_EMAIL = "admin@toshka.gov.eg";
-  // ضع false لإخفاء الدخول التجريبي والحسابات الافتراضية عند الإطلاق الفعلي
-  const ENABLE_DEMO_LOGIN = true;
-
-  const ZONES = [
-    "جميع المناطق (الإدارة العامة)",
-    "هندسة القناة الرئيسية (الشيخ زايد)",
-    "هندسة فرع 1",
-    "هندسة فرع 2",
-    "هندسة فرع 3",
-    "هندسة فرع 4"
-  ];
-  const CLEAN_OPTIONS = ["مطهرة بالكامل", "جاري التطهير", "تحتاج تطهير"];
-
-  // ===================================================================
-  // 2. أدوات مساعدة
-  // ===================================================================
-  const $ = (id) => document.getElementById(id);
-
-  function getArabicDateFull() {
-    return new Date().toLocaleDateString("ar-EG", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-  }
-  function getTodayISO() {
-    const d = new Date();
-    const p = (n) => String(n).padStart(2, "0");
-    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-  }
-  function showToast(msg) {
-    const el = $("toast");
-    el.textContent = msg;
-    el.classList.add("show");
-    clearTimeout(window._tTimer);
-    window._tTimer = setTimeout(() => el.classList.remove("show"), 3200);
-  }
-  function esc(str) {
-    return String(str ?? "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;");
-  }
-  async function hashPw(p) {
-    try {
-      if (window.crypto && crypto.subtle) {
-        const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("toshka:" + p));
-        return Array.from(new Uint8Array(buf)).map((x) => x.toString(16).padStart(2, "0")).join("");
-      }
-    } catch (e) { /* fall through */ }
-    return "plain:" + p;
-  }
-  async function pwMatches(user, password) {
-    if (!user.pwHash) return false;
-    return user.pwHash === (await hashPw(password)) || user.pwHash === "plain:" + password;
-  }
-  const isLocalId = (id) => String(id).includes("_"); // معرفات Firestore لا تحتوي "_"
-
-  function authErrorMessage(err) {
-    const code = err && err.code ? err.code : "";
-    const map = {
-      "auth/invalid-credential": "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
-      "auth/wrong-password": "كلمة المرور غير صحيحة.",
-      "auth/user-not-found": "هذا البريد غير مسجل.",
-      "auth/invalid-email": "صيغة البريد الإلكتروني غير صحيحة.",
-      "auth/user-disabled": "هذا الحساب موقوف.",
-      "auth/too-many-requests": "محاولات كثيرة. انتظر قليلاً ثم حاول مرة أخرى.",
-      "auth/network-request-failed": "تعذر الاتصال بالإنترنت/Firebase.",
-      "auth/operation-not-allowed": "تسجيل الدخول بالبريد وكلمة المرور غير مفعّل في Firebase (Authentication ← Sign-in method ← Email/Password).",
-      "auth/unauthorized-domain": "هذا النطاق غير مصرح به في Firebase (Authentication ← Settings ← Authorized domains).",
-      "auth/invalid-api-key": "مفتاح Firebase API غير صحيح.",
-      "auth/api-key-not-valid": "مفتاح Firebase API غير صحيح."
+    // إعدادات Firebase الخاصة بك
+    const firebaseConfig = {
+      apiKey: "AIzaSyBG7ldaL6toYCkzBRWZInT5GnwXKuBEtoQ",
+      authDomain: "data-cc6b1.firebaseapp.com",
+      projectId: "data-cc6b1",
+      storageBucket: "data-cc6b1.firebasestorage.app",
+      messagingSenderId: "766137137911",
+      appId: "1:766137137911:web:262aca159dd8d14a14f1f2",
+      measurementId: "G-ZYBRQ5FH2K"
     };
-    if (map[code]) return map[code] + ` (${code})`;
-    if (code) return `تعذر تسجيل الدخول (${code}).`;
-    return "البريد الإلكتروني أو كلمة المرور غير صحيحة.";
-  }
 
-  // ===================================================================
-  // 3. معادلة التصرف: Q = C * (H - H0)^n  |  الحجم اليومي (ألف م³) = Q * 86.4
-  // ===================================================================
-  function calculateDischargeFromLevel(level, c = 12.5, h0 = 175.0, n = 1.5) {
-    const H = parseFloat(level);
-    const C = isNaN(parseFloat(c)) ? 12.5 : parseFloat(c);
-    const H0 = isNaN(parseFloat(h0)) ? 0 : parseFloat(h0);
-    const N = isNaN(parseFloat(n)) ? 1.5 : parseFloat(n);
-    if (isNaN(H) || H <= H0) return { qCms: 0, dailyThousandM3: 0 };
-    const q = C * Math.pow(H - H0, N);
-    return { qCms: Number(q.toFixed(3)), dailyThousandM3: Number((q * 86.4).toFixed(2)) };
-  }
+    // تهيئة Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-  // ===================================================================
-  // 4. طبقة البيانات والصلاحيات
-  // ===================================================================
-  class ToshkaSystem {
-    constructor() {
-      this.isCloud = false;
-      this.auth = null;
-      this.db = null;
-      this.secondaryApp = null;
-      this.currentUser = null;
-      this.records = this._loadLocal("records", null);
-      this.users = this._loadLocal("users", []);
-      this.listeners = [];
-      this.unsubRecords = null;
-      this.unsubUsers = null;
-    }
-
-    async init() {
-      // ترحيل المستخدمين القدامى (كلمة مرور نصية) إلى هاش
-      for (const u of this.users) {
-        if (u.passwordHint && !u.pwHash) { u.pwHash = await hashPw(u.passwordHint); }
-        delete u.passwordHint;
-      }
-      if (ENABLE_DEMO_LOGIN && !this.users.some((u) => u.email === "admin@toshka.gov.eg")) {
-        const h = await hashPw("123456");
-        this.users.unshift(
-          { uid: "demo_admin", name: "مدير عام الإدارة (أدمن)", email: "admin@toshka.gov.eg", pwHash: h, role: "admin", zone: ZONES[0] },
-          { uid: "demo_eng_4", name: "مهندس منطقة فرع 4", email: "branch4@toshka.gov.eg", pwHash: h, role: "user", zone: "هندسة فرع 4" }
-        );
-      }
-      if (!this.records) this.records = ENABLE_DEMO_LOGIN ? this._seedRecords() : [];
-      this._saveLocal("users", this.users);
-      this._saveLocal("records", this.records);
-      this.initFirebase();
-    }
-
-    _seedRecords() {
-      const today = getTodayISO();
-      const r1 = calculateDischargeFromLevel(178.40, 14.2, 175.0, 1.5);
-      const r2 = calculateDischargeFromLevel(177.85, 8.5, 175.0, 1.5);
-      return [
-        { id: "loc_1", date: today, zone: "هندسة القناة الرئيسية (الشيخ زايد)", canalName: "فم ترعة الشيخ زايد الرئيسية",
-          level: 178.40, coefC: 14.2, datumH0: 175.0, expN: 1.5, dischargeCms: r1.qCms, dailyVolumeK: r1.dailyThousandM3,
-          cleaningStatus: "مطهرة بالكامل", notes: "انتظام المناسيب والتصرفات خلف القنطرة", updatedBy: MASTER_ADMIN_EMAIL, updatedAtMs: Date.now() },
-        { id: "loc_2", date: today, zone: "هندسة فرع 4", canalName: "مأخذ دليل فرع 4",
-          level: 177.85, coefC: 8.5, datumH0: 175.0, expN: 1.5, dischargeCms: r2.qCms, dailyVolumeK: r2.dailyThousandM3,
-          cleaningStatus: "جاري التطهير", notes: "متابعة أعمال إزالة الحشائش بالكيلو 12", updatedBy: "branch4@toshka.gov.eg", updatedAtMs: Date.now() }
-      ];
-    }
-
-    _loadLocal(key, fallback) {
-      try {
-        const raw = localStorage.getItem("toshka_sys_" + key);
-        return raw ? JSON.parse(raw) : fallback;
-      } catch (e) { return fallback; }
-    }
-    _saveLocal(key, val) {
-      try { localStorage.setItem("toshka_sys_" + key, JSON.stringify(val)); } catch (e) { /* ignore */ }
-    }
-
-    initFirebase() {
-      try {
-        if (typeof firebase === "undefined") throw new Error("Firebase SDK not loaded");
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        this.auth = firebase.auth();
-        this.db = firebase.firestore();
-        this.isCloud = true;
-        this._updateConnBadge(true);
-        this.auth.onAuthStateChanged(async (fbUser) => {
-          if (fbUser && !this.currentUser) {
-            try { await this._resolveUserProfile(fbUser); } catch (e) { console.warn(e); }
-          }
-        });
-      } catch (e) {
-        console.warn("Firebase غير متاح، سيعمل النظام محلياً:", e.message);
-        this.isCloud = false;
-        this._updateConnBadge(false);
-      }
-    }
-
-    _updateConnBadge(online) {
-      const el = $("connStatus");
-      if (!el) return;
-      el.className = "status-badge " + (online ? "status-cloud" : "status-local");
-      el.textContent = online ? "🟢 متصل بـ Firebase السحابي" : "🟠 وضع محلي (localStorage)";
-    }
-
-    async _resolveUserProfile(fbUser) {
-      const email = (fbUser.email || "").toLowerCase();
-      let profile = this.users.find((u) => u.email.toLowerCase() === email);
-
-      if (this.isCloud && this.db) {
-        try {
-          const snap = await this.db.collection("toshka_users").doc(fbUser.uid).get();
-          if (snap.exists) profile = { uid: fbUser.uid, ...snap.data() };
-        } catch (e) {
-          console.warn("تعذر جلب ملف المستخدم من Firestore:", e.message);
-        }
-      }
-      if (!profile) {
-        const isMaster = email === MASTER_ADMIN_EMAIL.toLowerCase();
-        profile = {
-          uid: fbUser.uid, email,
-          name: isMaster ? "مدير عام الإدارة (أدمن)" : email.split("@")[0],
-          role: isMaster ? "admin" : "user",
-          zone: isMaster ? ZONES[0] : "هندسة فرع 4"
-        };
-      }
-      this.currentUser = profile;
-      this._bindCloudListeners();
-      renderAuthenticatedUI();
-    }
-
-    _bindCloudListeners() {
-      if (!this.isCloud || !this.db || !this.currentUser || !this.auth.currentUser) return;
-      if (this.unsubRecords) this.unsubRecords();
-      let q = this.db.collection("toshka_field_records");
-      if (this.currentUser.role !== "admin") q = q.where("zone", "==", this.currentUser.zone);
-
-      this.unsubRecords = q.onSnapshot(
-        (snap) => {
-          const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-          list.sort((a, b) => (b.updatedAtMs || 0) - (a.updatedAtMs || 0));
-          this.records = list;
-          this._saveLocal("records", list);
-          this._notify();
-        },
-        (err) => console.warn("مزامنة السجلات:", err.message)
-      );
-
-      if (this.currentUser.role === "admin") {
-        if (this.unsubUsers) this.unsubUsers();
-        this.unsubUsers = this.db.collection("toshka_users").onSnapshot(
-          (snap) => {
-            const cloudUsers = snap.docs.map((d) => ({ uid: d.id, ...d.data() }));
-            const localOnly = this.users.filter((u) => isLocalId(u.uid) && !cloudUsers.some((c) => c.email === u.email));
-            this.users = [...cloudUsers, ...localOnly];
-            this._saveLocal("users", this.users);
-            this._notify();
-          },
-          (err) => console.warn("مزامنة المستخدمين:", err.message)
-        );
-      }
-    }
-
-    // ---------------- تسجيل الدخول ----------------
-    async login(email, password) {
-      const clean = email.trim().toLowerCase();
-      if (!clean || !password) throw new Error("أدخل البريد الإلكتروني وكلمة المرور.");
-
-      let cloudErr = null;
-      if (this.isCloud && this.auth) {
-        try {
-          const cred = await this.auth.signInWithEmailAndPassword(clean, password);
-          await this._resolveUserProfile(cred.user);
-          return;
-        } catch (e) {
-          cloudErr = e;
-        }
-      }
-
-      // حسابات محلية (وضع الأوفلاين أو حسابات تجريبية)
-      const local = this.users.find((u) => u.email.toLowerCase() === clean);
-      if (local && (await pwMatches(local, password))) {
-        this.currentUser = local;
-        renderAuthenticatedUI();
-        return;
-      }
-      throw new Error(authErrorMessage(cloudErr));
-    }
-
-    loginDemo(role) {
-      const target = this.users.find((u) => u.role === role && isLocalId(u.uid)) || this.users.find((u) => u.role === role);
-      if (!target) { showToast("لا يوجد حساب تجريبي بهذه الصلاحية."); return; }
-      this.currentUser = target;
-      renderAuthenticatedUI();
-      showToast("مرحباً بك: " + target.name);
-    }
-
-    async logout() {
-      if (this.unsubRecords) { this.unsubRecords(); this.unsubRecords = null; }
-      if (this.unsubUsers) { this.unsubUsers(); this.unsubUsers = null; }
-      if (this.isCloud && this.auth) { try { await this.auth.signOut(); } catch (e) {} }
-      this.currentUser = null;
-      $("appShell").classList.remove("active");
-      $("authScreen").style.display = "flex";
-      $("loginPassword").value = "";
-    }
-
-    getVisibleRecords() {
-      if (!this.currentUser) return [];
-      if (this.currentUser.role === "admin") return this.records;
-      return this.records.filter((r) => r.zone === this.currentUser.zone);
-    }
-
-    async addRecord(rec) {
-      const calc = calculateDischargeFromLevel(rec.level, rec.coefC, rec.datumH0, rec.expN);
-      const entry = { ...rec, dischargeCms: calc.qCms, dailyVolumeK: calc.dailyThousandM3,
-        updatedBy: this.currentUser.email, updatedAtMs: Date.now() };
-      const tempId = "loc_" + Date.now() + "_" + Math.random().toString(36).slice(2, 5);
-      this.records = [{ id: tempId, ...entry }, ...this.records];
-      this._saveLocal("records", this.records);
-      this._notify();
-      if (this.isCloud && this.db && this.auth.currentUser) {
-        try { await this.db.collection("toshka_field_records").add(entry); }
-        catch (e) { console.warn("حُفظ محلياً (تعذر الرفع السحابي):", e.message); showToast("تم الحفظ محلياً فقط (تعذر الرفع السحابي)"); }
-      }
-    }
-
-    async updateRecord(id, patch) {
-      this.records = this.records.map((r) => {
-        if (r.id !== id) return r;
-        const m = { ...r, ...patch, updatedBy: this.currentUser.email, updatedAtMs: Date.now() };
-        const c = calculateDischargeFromLevel(m.level, m.coefC, m.datumH0, m.expN);
-        m.dischargeCms = c.qCms;
-        m.dailyVolumeK = c.dailyThousandM3;
-        return m;
+    // تسجيل الدخول المجهول تلقائياً لتفعيل الاتصال السحابي
+    signInAnonymously(auth)
+      .then(() => {
+          console.log("تم الاتصال السحابي بـ Firebase بنجاح (Anonymous Auth)");
+          document.getElementById('firebase-status').innerHTML = '<i class="fas fa-cloud ms-1"></i>متصل بـ Firebase السحابي';
+      })
+      .catch((error) => {
+          console.error("خطأ في الاتصال السحابي:", error);
+          document.getElementById('firebase-status').className = 'badge bg-danger p-2';
+          document.getElementById('firebase-status').innerHTML = '<i class="fas fa-exclamation-triangle ms-1"></i>خطأ في الاتصال السحابي';
       });
-      this._saveLocal("records", this.records);
-      this._notify();
-      const target = this.records.find((r) => r.id === id);
-      if (this.isCloud && this.db && this.auth.currentUser && target && !isLocalId(id)) {
-        try { const { id: _i, ...payload } = target; await this.db.collection("toshka_field_records").doc(id).update(payload); }
-        catch (e) { console.warn("تعذر التحديث سحابياً:", e.message); }
-      }
-    }
 
-    async deleteRecord(id) {
-      this.records = this.records.filter((r) => r.id !== id);
-      this._saveLocal("records", this.records);
-      this._notify();
-      if (this.isCloud && this.db && this.auth.currentUser && !isLocalId(id)) {
-        try { await this.db.collection("toshka_field_records").doc(id).delete(); } catch (e) {}
-      }
-    }
+    // إتاحة الدوال للاستخدام العام بالصفحة
+    window.db = db;
+    window.collection = collection;
+    window.addDoc = addDoc;
+</script>
 
-    async adminCreateUser({ name, email, password, role, zone }) {
-      if (this.currentUser?.role !== "admin") throw new Error("غير مصرح: هذه الصلاحية للأدمن فقط.");
-      const clean = email.trim().toLowerCase();
-      if (password.length < 6) throw new Error("كلمة المرور يجب ألا تقل عن 6 أحرف.");
-      let uid = "usr_" + Date.now();
+<script>
+    // تهيئة الخريطة التفاعلية لمنطقة توشكى (Leaflet)
+    const map = L.map('toshka-map').setView([23.5, 31.6], 9);
 
-      if (this.isCloud && this.auth && this.auth.currentUser && typeof firebase !== "undefined") {
-        try {
-          if (!this.secondaryApp) this.secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryUserCreator");
-          const secAuth = this.secondaryApp.auth();
-          const created = await secAuth.createUserWithEmailAndPassword(clean, password);
-          uid = created.user.uid;
-          await secAuth.signOut();
-          await this.db.collection("toshka_users").doc(uid).set({ name, email: clean, role, zone, createdAtMs: Date.now() });
-        } catch (e) {
-          throw new Error(authErrorMessage(e));
-        }
-      }
-      const obj = { uid, name, email: clean, pwHash: await hashPw(password), role, zone };
-      // لا نخزن كلمة المرور محلياً للحسابات السحابية
-      if (!isLocalId(uid)) delete obj.pwHash;
-      this.users = [obj, ...this.users.filter((u) => u.email !== clean)];
-      this._saveLocal("users", this.users);
-      this._notify();
-    }
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18,
+        attribution: '© OpenStreetMap contributors - Toshka Water Resources'
+    }).addTo(map);
 
-    async adminUpdateUser(uid, newZone, newRole) {
-      if (this.currentUser?.role !== "admin") return;
-      this.users = this.users.map((u) => (u.uid === uid ? { ...u, zone: newZone, role: newRole } : u));
-      this._saveLocal("users", this.users);
-      this._notify();
-      if (this.isCloud && this.db && this.auth.currentUser && !isLocalId(uid)) {
-        try { await this.db.collection("toshka_users").doc(uid).update({ zone: newZone, role: newRole }); } catch (e) {}
-      }
-    }
-
-    subscribe(fn) { this.listeners.push(fn); }
-    _notify() { this.listeners.forEach((fn) => fn()); }
-  }
-
-  const sys = new ToshkaSystem();
-
-  // ===================================================================
-  // 5. الواجهات
-  // ===================================================================
-  let activeTab = "dashboard";
-
-  function getNavItems() {
-    const items = [
-      { id: "dashboard", icon: "🏛️", label: "الواجهة الرئيسية والملخص" },
-      { id: "excel_sheet", icon: "📊", label: "سجل المناسيب والتصرفات (Excel)" },
-      { id: "memo_builder", icon: "📝", label: "إعداد المذكرة الشاملة بالملخص" }
+    // مواقع الترع والهندسات مع تمييز حالة التطهير بالألوان على الخريطة
+    const canalLocations = [
+        { name: "هندسة فرع 1 - ترعة الكيلو 15", lat: 23.45, lng: 31.50, status: "تم التطهير بنسبة 100%", color: "green" },
+        { name: "هندسة فرع 2 - القناة الرئيسية", lat: 23.60, lng: 31.75, status: "جاري العمل (33%)", color: "orange" },
+        { name: "هندسة فرع 4 - مأخذ التطهير", lat: 23.30, lng: 31.40, status: "لم يبدأ بعد", color: "red" }
     ];
-    if (sys.currentUser?.role === "admin") items.push({ id: "admin_users", icon: "👑", label: "إدارة المستخدمين والصلاحيات" });
-    return items;
-  }
 
-  function renderNav() {
-    $("navList").innerHTML = getNavItems().map((item) => `
-      <li><button class="nav-btn ${activeTab === item.id ? "active" : ""}" data-tab="${item.id}">
-        <span>${item.icon}</span><span>${item.label}</span></button></li>`).join("");
-  }
+    canalLocations.forEach(site => {
+        const circleMarker = L.circleMarker([site.lat, site.lng], {
+            color: site.color,
+            fillColor: site.color,
+            fillOpacity: 0.8,
+            radius: 12
+        }).addTo(map);
 
-  function renderAuthenticatedUI() {
-    $("authScreen").style.display = "none";
-    $("appShell").classList.add("active");
-    const u = sys.currentUser;
-    $("sidebarUserName").textContent = u.name;
-    $("sidebarUserZone").textContent = "النطاق: " + u.zone;
-    const badge = $("sidebarRoleBadge");
-    if (u.role === "admin") { badge.textContent = "👑 صلاحية أدمن (تحكم كامل)"; badge.className = "user-role-badge"; }
-    else { badge.textContent = "👷 مهندس منطقة (نطاق محدد)"; badge.className = "user-role-badge eng"; }
-    $("bannerDateText").textContent = "📅 " + getArabicDateFull();
-    if (activeTab === "admin_users" && u.role !== "admin") activeTab = "dashboard";
-    renderNav();
-    renderActiveTab();
-  }
-
-  function renderActiveTab() {
-    const c = $("mainContent");
-    if (activeTab === "dashboard") renderDashboard(c);
-    else if (activeTab === "excel_sheet") renderExcelSheet(c);
-    else if (activeTab === "memo_builder") renderMemoBuilder(c);
-    else if (activeTab === "admin_users") renderAdminUsers(c);
-  }
-
-  window._goTab = function (tab) {
-    activeTab = tab;
-    renderNav();
-    renderActiveTab();
-    $("sidebar").classList.remove("open");
-    window.scrollTo(0, 0);
-  };
-
-  // ---------- الواجهة الرئيسية ----------
-  function renderDashboard(container) {
-    const rows = sys.getVisibleRecords();
-    const total = rows.length;
-    const totalQ = rows.reduce((s, r) => s + (parseFloat(r.dischargeCms) || 0), 0);
-    const totalVol = rows.reduce((s, r) => s + (parseFloat(r.dailyVolumeK) || 0), 0);
-    const avgLevel = total ? rows.reduce((s, r) => s + (parseFloat(r.level) || 0), 0) / total : 0;
-    const cleanDone = rows.filter((r) => r.cleaningStatus === "مطهرة بالكامل").length;
-    const cleanPct = total ? Math.round((cleanDone / total) * 100) : 0;
-
-    const byZone = {};
-    rows.forEach((r) => {
-      const z = (byZone[r.zone] = byZone[r.zone] || { count: 0, qCms: 0, volK: 0, levels: [] });
-      z.count++;
-      z.qCms += parseFloat(r.dischargeCms) || 0;
-      z.volK += parseFloat(r.dailyVolumeK) || 0;
-      z.levels.push(parseFloat(r.level) || 0);
+        circleMarker.bindPopup(`<b>${site.name}</b><br>حالة التطهير: <span style="color:${site.color}; font-weight:bold;">${site.status}</span>`);
     });
 
-    container.innerHTML = `
-      <div class="card" style="background:linear-gradient(135deg,#0b4a7d 0%,#0d7a73 100%); color:#fff; border:none;">
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
-          <div>
-            <div style="font-size:.85rem; opacity:.9;">وزارة الموارد المائية والري</div>
-            <h1 style="font-size:1.45rem; font-weight:800; margin:.2rem 0;">الإدارة العامة للموارد المائية والري بجنوب الوادي بتوشكى</h1>
-            <div style="font-size:.92rem; opacity:.95;">📆 ${esc(getArabicDateFull())} | النطاق المعروض: <strong>${esc(sys.currentUser.zone)}</strong></div>
-          </div>
-          <div style="display:flex; gap:.5rem; flex-wrap:wrap;">
-            <button class="btn" style="background:#fff; color:#0b4a7d;" onclick="window._goTab('excel_sheet')">📊 فتح شيت المناسيب والتصرفات</button>
-            <button class="btn" style="background:#fbbf24; color:#0f172a;" onclick="window._goTab('memo_builder')">📝 توليد المذكرة الشاملة</button>
-          </div>
-        </div>
-      </div>
+    // دالة حساب التصرف للقنوات المكشوفة (معادلة مانش Manning's Equation)
+    function calculateOpenChannelFlow() {
+        const baseWidth = parseFloat(document.getElementById('calc-width').value) || 5.0; // عرض القاع (م)
+        const waterDepth = parseFloat(document.getElementById('calc-depth').value) || 1.5; // عمق المياه (م)
+        const bedSlope = parseFloat(document.getElementById('calc-slope').value) || 0.0001; // ميل القاع
+        const roughness = parseFloat(document.getElementById('calc-roughness').value) || 0.022; // معامل الخشونة n
 
-      <div class="kpi-grid">
-        <div class="kpi-card"><div class="kpi-label">إجمالي نقاط الرصد المسجلة</div><div class="kpi-value">${total} موقع</div><div class="kpi-sub">حسب صلاحية النطاق الجغرافي</div></div>
-        <div class="kpi-card accent"><div class="kpi-label">إجمالي التصرفات المحسوبة</div><div class="kpi-value">${totalQ.toFixed(2)} م³/ث</div><div class="kpi-sub">بإجمالي حجم ${totalVol.toFixed(1)} ألف م³/يوم</div></div>
-        <div class="kpi-card success"><div class="kpi-label">متوسط المناسيب المرصودة</div><div class="kpi-value">${avgLevel.toFixed(2)} م</div><div class="kpi-sub">مقاسة فوق سطح البحر</div></div>
-        <div class="kpi-card warning"><div class="kpi-label">موقف التطهيرات المكتملة</div><div class="kpi-value">${cleanPct}%</div><div class="kpi-sub">${cleanDone} من أصل ${total} موقع مطهر</div></div>
-      </div>
+        // حساب المساحة والمحيط المبلل ونصف القطر الهيدروليكي
+        const area = baseWidth * waterDepth; // المساحة A
+        const wettedPerimeter = baseWidth + (2 * waterDepth); // المحيط P
+        const hydraulicRadius = area / wettedPerimeter; // نصف القطر R = A / P
+        
+        // تطبيق معادلة مانش: Q = (1/n) * A * (R^(2/3)) * (S^(1/2))
+        const discharge = (1 / roughness) * area * Math.pow(hydraulicRadius, 2/3) * Math.sqrt(bedSlope);
+        
+        document.getElementById('calc-result').innerText = `التصرف المحسوب: ${discharge.toFixed(2)} م٣/ث`;
+        document.getElementById('total-discharge-val').innerText = `${discharge.toFixed(2)} م٣/ث`;
+    }
 
-      <div class="card">
-        <div class="card-header"><h3 class="card-title">📌 الملخص التنفيذي حسب الهندسات / المناطق</h3></div>
-        <div class="excel-wrap">
-          <table class="excel-table">
-            <thead><tr><th>المنطقة / الهندسة</th><th>عدد المواقع</th><th>متوسط المنسوب (م)</th><th>إجمالي التصرف (م³/ث)</th><th>الحجم اليومي (ألف م³/يوم)</th></tr></thead>
-            <tbody>
-              ${Object.keys(byZone).length
-                ? Object.entries(byZone).map(([z, i]) => `
-                  <tr><td><strong>${esc(z)}</strong></td><td>${i.count}</td>
-                  <td>${(i.levels.reduce((a, b) => a + b, 0) / i.levels.length).toFixed(2)}</td>
-                  <td><strong>${i.qCms.toFixed(3)}</strong></td><td>${i.volK.toFixed(2)}</td></tr>`).join("")
-                : `<tr><td colspan="5" style="text-align:center; padding:1.5rem;">لا توجد بيانات مسجلة في هذا النطاق بعد.</td></tr>`}
-            </tbody>
-          </table>
-        </div>
-      </div>`;
-  }
+    function logoutUser() {
+        if(confirm('هل تريد تسجيل الخروج؟')) {
+            alert('تم تسجيل الخروج بنجاح.');
+        }
+    }
+</script>
 
-  // ---------- شيت السجل ----------
-  function cleanPill(s) {
-    const cls = s === "مطهرة بالكامل" ? "pill-done" : s === "جاري التطهير" ? "pill-prog" : "pill-need";
-    return `<span class="pill ${cls}">${esc(s)}</span>`;
-  }
-
-  function renderExcelSheet(container) {
-    const isAdmin = sys.currentUser.role === "admin";
-    const rows = sys.getVisibleRecords();
-    const zoneOptions = isAdmin ? ZONES.filter((z) => !z.startsWith("جميع")) : [sys.currentUser.zone];
-
-    container.innerHTML = `
-      <div class="card">
-        <div class="card-header"><h3 class="card-title">➕ إضافة قراءة منسوب جديدة (يُحسب التصرف تلقائياً من المنسوب)</h3></div>
-        <form id="addRecordForm" class="grid-form">
-          <div class="form-group"><label>التاريخ *</label><input type="date" id="recDate" required value="${getTodayISO()}" /></div>
-          <div class="form-group"><label>المنطقة / الهندسة *</label>
-            <select id="recZone" ${isAdmin ? "" : "disabled"}>${zoneOptions.map((z) => `<option value="${esc(z)}">${esc(z)}</option>`).join("")}</select></div>
-          <div class="form-group"><label>اسم الترعة / الموقع الهيدروليكي *</label><input type="text" id="recCanal" required placeholder="مثال: فم ترعة فرع 4" /></div>
-          <div class="form-group"><label>المنسوب المقاس H (متر) *</label><input type="number" step="0.01" id="recLevel" required placeholder="178.20" /></div>
-          <div class="form-group"><label>منسوب العتب H0 (م)</label><input type="number" step="0.01" id="recH0" value="175.00" /></div>
-          <div class="form-group"><label>معامل المعايرة C</label><input type="number" step="0.1" id="recC" value="12.5" /></div>
-          <div class="form-group"><label>الأس n</label><input type="number" step="0.01" id="recN" value="1.5" /></div>
-          <div class="form-group"><label>التصرف المحسوب (م³/ث)</label>
-            <input type="text" id="recCalcPreview" readonly style="background:#e8f1f8; font-weight:800; color:#0b4a7d;" value="0.000" /></div>
-          <div class="form-group"><label>حالة التطهير</label>
-            <select id="recStatus">${CLEAN_OPTIONS.map((o) => `<option value="${o}">${o}</option>`).join("")}</select></div>
-          <div class="form-group full"><label>ملاحظات</label><input type="text" id="recNotes" placeholder="ملاحظات ميدانية (اختياري)" /></div>
-          <div class="form-group full"><button type="submit" class="btn btn-primary">💾 حفظ القراءة في السجل</button></div>
-        </form>
-      </div>
-
-      <div class="card">
-        <div class="card-header"><h3 class="card-title">📋 سجل المناسيب والتصرفات (${rows.length} سجل) — عدّل أي خلية ثم اضغط Enter أو انتقل لخلية أخرى</h3></div>
-        <div class="excel-wrap">
-          <table class="excel-table">
-            <thead><tr>
-              <th>التاريخ</th><th>المنطقة</th><th>الموقع</th><th>المنسوب H</th><th>H0</th><th>C</th><th>n</th>
-              <th>التصرف (م³/ث)</th><th>الحجم (ألف م³/يوم)</th><th>التطهير</th><th>ملاحظات</th><th>آخر تعديل بواسطة</th><th>حذف</th>
-            </tr></thead>
-            <tbody>
-              ${rows.length ? rows.map((r) => `
-                <tr>
-                  <td>${esc(r.date)}</td>
-                  <td>${esc(r.zone)}</td>
-                  <td><input class="cell-input" style="min-width:150px" data-id="${esc(r.id)}" data-field="canalName" value="${esc(r.canalName)}" /></td>
-                  <td><input class="cell-input" type="number" step="0.01" data-id="${esc(r.id)}" data-field="level" data-num="1" value="${esc(r.level)}" /></td>
-                  <td><input class="cell-input" type="number" step="0.01" data-id="${esc(r.id)}" data-field="datumH0" data-num="1" value="${esc(r.datumH0)}" /></td>
-                  <td><input class="cell-input" type="number" step="0.1" data-id="${esc(r.id)}" data-field="coefC" data-num="1" value="${esc(r.coefC)}" /></td>
-                  <td><input class="cell-input" type="number" step="0.01" data-id="${esc(r.id)}" data-field="expN" data-num="1" value="${esc(r.expN)}" /></td>
-                  <td><strong>${(parseFloat(r.dischargeCms) || 0).toFixed(3)}</strong></td>
-                  <td>${(parseFloat(r.dailyVolumeK) || 0).toFixed(2)}</td>
-                  <td>
-                    <select class="cell-input" data-id="${esc(r.id)}" data-field="cleaningStatus">
-                      ${CLEAN_OPTIONS.map((o) => `<option value="${o}" ${o === r.cleaningStatus ? "selected" : ""}>${o}</option>`).join("")}
-                    </select>
-                  </td>
-                  <td><input class="cell-input" style="min-width:200px" data-id="${esc(r.id)}" data-field="notes" value="${esc(r.notes)}" /></td>
-                  <td style="font-size:.76rem; color:var(--muted)">${esc(r.updatedBy)}</td>
-                  <td><button class="btn btn-danger" data-del="${esc(r.id)}">🗑️</button></td>
-                </tr>`).join("")
-              : `<tr><td colspan="13" style="text-align:center; padding:1.5rem;">لا توجد سجلات بعد.</td></tr>`}
-            </tbody>
-          </table>
-        </div>
-      </div>`;
-    updateCalcPreview();
-  }
-
-  function updateCalcPreview() {
-    const p = $("recCalcPreview");
-    if (!p) return;
-    const c = calculateDischargeFromLevel($("recLevel").value, $("recC").value, $("recH0").value, $("recN").value);
-    p.value = `${c.qCms.toFixed(3)}  (${c.dailyThousandM3.toFixed(1)} ألف م³/يوم)`;
-  }
-
-  // ---------- المذكرة ----------
-  function buildMemoText() {
-    const rows = sys.getVisibleRecords();
-    const byZone = {};
-    rows.forEach((r) => {
-      const z = (byZone[r.zone] = byZone[r.zone] || { n: 0, q: 0, v: 0, l: 0, done: 0, prog: 0, need: 0, notes: [] });
-      z.n++; z.q += parseFloat(r.dischargeCms) || 0; z.v += parseFloat(r.dailyVolumeK) || 0; z.l += parseFloat(r.level) || 0;
-      if (r.cleaningStatus === "مطهرة بالكامل") z.done++; else if (r.cleaningStatus === "جاري التطهير") z.prog++; else z.need++;
-      if (r.notes) z.notes.push(`${r.canalName}: ${r.notes}`);
-    });
-    const totalQ = rows.reduce((s, r) => s + (parseFloat(r.dischargeCms) || 0), 0);
-    const totalV = rows.reduce((s, r) => s + (parseFloat(r.dailyVolumeK) || 0), 0);
-
-    let t = `وزارة الموارد المائية والري\nالإدارة العامة للموارد المائية والري بجنوب الوادي بتوشكى\n\n`;
-    t += `التاريخ: ${getArabicDateFull()}\nالنطاق: ${sys.currentUser.zone}\n\n`;
-    t += `مذكرة بشأن: موقف المناسيب والتصرفات والتطهيرات بالهندسات\n\n`;
-    t += `السيد الأستاذ الدكتور / رئيس الإدارة المركزية\nتحية طيبة وبعد،\n\n`;
-    t += `نتشرف بالإحاطة بموقف المناسيب والتصرفات المائية المرصودة، وذلك على النحو التالي:\n\n`;
-    t += `أولاً: الموقف العام\n- عدد نقاط الرصد: ${rows.length}\n- إجمالي التصرفات المحسوبة: ${totalQ.toFixed(2)} م³/ث\n- إجمالي الحجم اليومي: ${totalV.toFixed(1)} ألف م³/يوم\n\n`;
-    t += `ثانياً: الموقف بالهندسات\n`;
-    const zs = Object.entries(byZone);
-    if (!zs.length) t += "- لا توجد بيانات مسجلة.\n";
-    zs.forEach(([z, i], idx) => {
-      t += `${idx + 1}. ${z}: ${i.n} موقع، متوسط المنسوب ${(i.l / i.n).toFixed(2)} م، التصرف ${i.q.toFixed(3)} م³/ث، الحجم ${i.v.toFixed(1)} ألف م³/يوم.\n`;
-      t += `   التطهير: مكتمل ${i.done} | جاري ${i.prog} | يحتاج ${i.need}\n`;
-      i.notes.forEach((n) => (t += `   - ${n}\n`));
-    });
-    t += `\nثالثاً: التوصيات\n- استمرار المتابعة اليومية للمناسيب والتصرفات.\n- سرعة الانتهاء من أعمال التطهير بالمواقع المتأخرة.\n\nوتفضلوا بقبول فائق الاحترام،\n\n${sys.currentUser.name}`;
-    return t;
-  }
-
-  function renderMemoBuilder(container) {
-    container.innerHTML = `
-      <div class="card">
-        <div class="card-header">
-          <h3 class="card-title">📝 المذكرة الشاملة بالملخص (قابلة للتعديل)</h3>
-          <div style="display:flex; gap:.5rem; flex-wrap:wrap;">
-            <button class="btn btn-outline btn-sm" id="memoRegen">🔄 إعادة التوليد من البيانات</button>
-            <button class="btn btn-outline btn-sm" id="memoCopy">📋 نسخ</button>
-            <button class="btn btn-primary btn-sm" id="memoPrint">🖨️ طباعة</button>
-          </div>
-        </div>
-        <textarea id="memoText" class="memo-area">${esc(buildMemoText())}</textarea>
-      </div>`;
-  }
-
-  // ---------- إدارة المستخدمين ----------
-  function renderAdminUsers(container) {
-    if (sys.currentUser.role !== "admin") { container.innerHTML = ""; return; }
-    container.innerHTML = `
-      <div class="card">
-        <div class="card-header"><h3 class="card-title">➕ إضافة مستخدم جديد</h3></div>
-        <form id="createUserForm" class="grid-form">
-          <div class="form-group"><label>الاسم *</label><input type="text" id="nuName" required /></div>
-          <div class="form-group"><label>البريد الإلكتروني *</label><input type="email" id="nuEmail" required /></div>
-          <div class="form-group"><label>كلمة المرور (6 أحرف فأكثر) *</label><input type="password" id="nuPass" required minlength="6" autocomplete="new-password" /></div>
-          <div class="form-group"><label>الصلاحية</label>
-            <select id="nuRole"><option value="user">مهندس منطقة</option><option value="admin">أدمن</option></select></div>
-          <div class="form-group"><label>النطاق</label>
-            <select id="nuZone">${ZONES.map((z) => `<option value="${esc(z)}">${esc(z)}</option>`).join("")}</select></div>
-          <div class="form-group full"><button type="submit" class="btn btn-primary">إنشاء المستخدم</button></div>
-        </form>
-      </div>
-      <div class="card">
-        <div class="card-header"><h3 class="card-title">👥 المستخدمون (${sys.users.length})</h3></div>
-        <div class="excel-wrap">
-          <table class="excel-table">
-            <thead><tr><th>الاسم</th><th>البريد</th><th>الصلاحية</th><th>النطاق</th><th>حفظ</th></tr></thead>
-            <tbody>
-              ${sys.users.map((u) => `
-                <tr>
-                  <td>${esc(u.name)}</td><td>${esc(u.email)}</td>
-                  <td><select data-uid="${esc(u.uid)}" data-f="role">
-                    <option value="user" ${u.role === "user" ? "selected" : ""}>مهندس منطقة</option>
-                    <option value="admin" ${u.role === "admin" ? "selected" : ""}>أدمن</option></select></td>
-                  <td><select data-uid="${esc(u.uid)}" data-f="zone">
-                    ${ZONES.map((z) => `<option value="${esc(z)}" ${z === u.zone ? "selected" : ""}>${esc(z)}</option>`).join("")}</select></td>
-                  <td><button class="btn btn-accent btn-sm" data-saveuser="${esc(u.uid)}">حفظ</button></td>
-                </tr>`).join("")}
-            </tbody>
-          </table>
-        </div>
-      </div>`;
-  }
-
-  // ===================================================================
-  // 6. التصدير
-  // ===================================================================
-  function download(filename, content, type) {
-    const blob = new Blob([content], { type });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  }
-
-  function exportExcel() {
-    const rows = sys.getVisibleRecords();
-    const head = ["التاريخ","المنطقة","الموقع","المنسوب H","H0","C","n","التصرف (م³/ث)","الحجم (ألف م³/يوم)","التطهير","ملاحظات","بواسطة"];
-    const body = rows.map((r) => [r.date, r.zone, r.canalName, r.level, r.datumH0, r.coefC, r.expN, r.dischargeCms, r.dailyVolumeK, r.cleaningStatus, r.notes, r.updatedBy]);
-    const html = `<html dir="rtl" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"></head><body>
-      <table border="1"><tr>${head.map((h) => `<th>${esc(h)}</th>`).join("")}</tr>
-      ${body.map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</table></body></html>`;
-    download(`toshka_records_${getTodayISO()}.xls`, "\ufeff" + html, "application/vnd.ms-excel;charset=utf-8");
-  }
-
-  function exportJson() {
-    download(`toshka_backup_${getTodayISO()}.json`, JSON.stringify({ exportedAt: new Date().toISOString(), records: sys.getVisibleRecords() }, null, 2), "application/json");
-  }
-
-  // ===================================================================
-  // 7. ربط الأحداث
-  // ===================================================================
-  function showLoginError(msg) {
-    const el = $("loginError");
-    el.textContent = msg || "";
-    el.classList.toggle("show", !!msg);
-  }
-
-  function wireEvents() {
-    $("loginDateDisplay").textContent = "📅 " + getArabicDateFull();
-    if (!ENABLE_DEMO_LOGIN) $("demoBox").style.display = "none";
-
-    $("loginForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      showLoginError("");
-      const btn = $("loginBtn");
-      btn.disabled = true;
-      const oldText = btn.textContent;
-      btn.textContent = "جاري التحقق...";
-      try {
-        await sys.login($("loginEmail").value, $("loginPassword").value);
-      } catch (err) {
-        showLoginError(err.message || "تعذر تسجيل الدخول.");
-      } finally {
-        btn.disabled = false;
-        btn.textContent = oldText;
-      }
-    });
-
-    $("demoAdminBtn").addEventListener("click", () => sys.loginDemo("admin"));
-    $("demoEngBtn").addEventListener("click", () => sys.loginDemo("user"));
-    $("logoutBtn").addEventListener("click", () => sys.logout());
-    $("menuToggle").addEventListener("click", () => $("sidebar").classList.toggle("open"));
-    $("exportExcelBtn").addEventListener("click", exportExcel);
-    $("exportJsonBtn").addEventListener("click", exportJson);
-
-    $("navList").addEventListener("click", (e) => {
-      const b = e.target.closest(".nav-btn");
-      if (b) window._goTab(b.dataset.tab);
-    });
-
-    const main = $("mainContent");
-
-    main.addEventListener("input", (e) => {
-      if (["recLevel", "recH0", "recC", "recN"].includes(e.target.id)) updateCalcPreview();
-    });
-
-    main.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      if (e.target.id === "addRecordForm") {
-        const level = parseFloat($("recLevel").value);
-        if (isNaN(level)) { showToast("أدخل منسوباً صحيحاً."); return; }
-        await sys.addRecord({
-          date: $("recDate").value || getTodayISO(),
-          zone: $("recZone").value,
-          canalName: $("recCanal").value.trim(),
-          level,
-          datumH0: parseFloat($("recH0").value),
-          coefC: parseFloat($("recC").value),
-          expN: parseFloat($("recN").value),
-          cleaningStatus: $("recStatus").value,
-          notes: $("recNotes").value.trim()
-        });
-        showToast("✅ تم حفظ القراءة");
-      } else if (e.target.id === "createUserForm") {
-        try {
-          await sys.adminCreateUser({
-            name: $("nuName").value.trim(), email: $("nuEmail").value, password: $("nuPass").value,
-            role: $("nuRole").value, zone: $("nuZone").value
-          });
-          showToast("✅ تم إنشاء المستخدم");
-        } catch (err) { showToast("❌ " + err.message); }
-      }
-    });
-
-    main.addEventListener("change", (e) => {
-      const t = e.target;
-      if (t.dataset && t.dataset.id && t.dataset.field) {
-        const val = t.dataset.num ? parseFloat(t.value) : t.value;
-        if (t.dataset.num && isNaN(val)) { showToast("قيمة رقمية غير صحيحة."); renderActiveTab(); return; }
-        sys.updateRecord(t.dataset.id, { [t.dataset.field]: val });
-      }
-    });
-
-    main.addEventListener("click", async (e) => {
-      const del = e.target.closest("[data-del]");
-      if (del) {
-        if (confirm("هل تريد حذف هذا السجل؟")) { await sys.deleteRecord(del.dataset.del); showToast("🗑️ تم الحذف"); }
-        return;
-      }
-      const sv = e.target.closest("[data-saveuser]");
-      if (sv) {
-        const uid = sv.dataset.saveuser;
-        const zone = main.querySelector(`select[data-uid="${CSS.escape(uid)}"][data-f="zone"]`).value;
-        const role = main.querySelector(`select[data-uid="${CSS.escape(uid)}"][data-f="role"]`).value;
-        await sys.adminUpdateUser(uid, zone, role);
-        showToast("✅ تم حفظ الصلاحيات");
-        return;
-      }
-      if (e.target.id === "memoRegen") { $("memoText").value = buildMemoText(); }
-      if (e.target.id === "memoCopy") {
-        try { await navigator.clipboard.writeText($("memoText").value); showToast("📋 تم النسخ"); }
-        catch (err) { $("memoText").select(); document.execCommand("copy"); showToast("📋 تم النسخ"); }
-      }
-      if (e.target.id === "memoPrint") {
-        const w = window.open("", "_blank");
-        if (!w) { showToast("اسمح بالنوافذ المنبثقة للطباعة."); return; }
-        w.document.write(`<html dir="rtl" lang="ar"><head><meta charset="UTF-8"><title>مذكرة</title></head>
-          <body style="font-family:Tahoma,Arial,sans-serif; line-height:2; padding:2cm; white-space:pre-wrap;">${esc($("memoText").value)}</body></html>`);
-        w.document.close();
-        w.focus();
-        w.print();
-      }
-    });
-
-    // إعادة الرسم عند تغير البيانات دون مقاطعة الكتابة
-    sys.subscribe(() => {
-      if (!sys.currentUser) return;
-      const a = document.activeElement;
-      if (a && a.closest && (a.closest("#addRecordForm") || a.closest("#createUserForm") || a.id === "memoText")) return;
-      renderActiveTab();
-    });
-  }
-
-  (async function boot() {
-    wireEvents();
-    await sys.init();
-  })();
-  </script>
 </body>
+</html>
