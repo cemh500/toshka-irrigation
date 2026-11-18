@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>الإدارة العامة للموارد المائية والري بجنوب الوادي بتوشكى</title>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <style>
+    :root {
+      --primary: #0b4a7d;
+      --primary-dark: #072f52;
+      --primary-light: #e8f1f8;
+      --accent: #0d7a73;
+      --accent-hover: #095c57;
+      --bg: #f1f5f9;
+      --surface: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #cbd5e1;
+      --success: #15803d;
+      --success-bg: #dcfce7;
+      --warning: #b45309;
+      --warning-bg: #fef3c7;
+      --danger: #b91c1c;
+      --danger-bg: #fee2e2;
+      --sidebar-w: 275px;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* شاشة تسجيل الدخول */
+    .auth-screen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 55%, var(--accent) 100%);
+    }
+
+    .auth-card {
+      background: #fff;
+      width: 100%;
+      max-width: 470px;
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.25);
+    }
+
+    .auth-header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1rem;
+    }
+
+    .auth-header .ministry {
+      font-size: 0.85rem;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .auth-header h1 {
+      font-size: 1.18rem;
+      color: var(--primary-dark);
+      margin: 0.3rem 0;
+      font-weight: 800;
+    }
+
+    .auth-header .date-pill {
+      display: inline-block;
+      background: var(--primary-light);
+      color: var(--primary);
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      margin-top: 0.35rem;
+    }
+
+    /* تخطيط المنصة */
+    .app-shell {
+      display: none;
+      min-height: 100vh;
+    }
+
+    .app-shell.active {
+      display: flex;
+    }
+
+    .sidebar {
+      width: var(--sidebar-w);
+      background: linear-gradient(180deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 100;
+      transition: transform 0.3s ease;
+    }
+
+    .brand {
+      padding: 1.25rem 1.1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .brand-title {
+      font-size: 0.96rem;
+      font-weight: 800;
+      line-height: 1.45;
+    }
+
+    .brand-sub {
+      font-size: 0.76rem;
+      color: #bae6fd;
+      margin-top: 0.25rem;
+    }
+
+    .user-box {
+      margin: 0.85rem;
+      padding: 0.75rem;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      font-size: 0.82rem;
+    }
+
+    .user-role-badge {
+      display: inline-block;
+      padding: 0.15rem 0.55rem;
+      border-radius: 6px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      margin-top: 0.3rem;
+      background: #fbbf24;
+      color: #1e293b;
+    }
+
+    .user-role-badge.eng {
+      background: #34d399;
+      color: #064e3b;
+    }
+
+    .nav-list {
+      list-style: none;
+      padding: 0.5rem 0.75rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .nav-btn {
+      width: 100%;
+      background: transparent;
+      border: none;
+      color: #e2e8f0;
+      padding: 0.8rem 0.95rem;
+      border-radius: 10px;
+      text-align: right;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      transition: 0.2s;
+    }
+
+    .nav-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+    }
+
+    .nav-btn.active {
+      background: #fff;
+      color: var(--primary-dark);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+    }
+
+    .sidebar-footer {
+      padding: 0.9rem 1rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .main-wrapper {
+      flex: 1;
+      margin-right: var(--sidebar-w);
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    /* الترويسة الرسمية الدائمة */
+    .official-banner {
+      background: var(--surface);
+      border-bottom: 2px solid var(--primary);
+      padding: 0.85rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .banner-info h2 {
+      font-size: 1.12rem;
+      font-weight: 800;
+      color: var(--primary-dark);
+    }
+
+    .banner-meta {
+      font-size: 0.84rem;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .banner-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .status-badge {
+      padding: 0.3rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .status-cloud { background: var(--success-bg); color: var(--success); }
+    .status-local { background: var(--warning-bg); color: var(--warning); }
+
+    .content {
+      padding: 1.4rem;
+      max-width: 1380px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.65rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .card-title {
+      font-size: 1.02rem;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    /* بطاقات الملخص */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-right: 4px solid var(--primary);
+      border-radius: var(--radius);
+      padding: 1rem 1.1rem;
+    }
+
+    .kpi-card.accent { border-right-color: var(--accent); }
+    .kpi-card.success { border-right-color: var(--success); }
+    .kpi-card.warning { border-right-color: var(--warning); }
+
+    .kpi-label {
+      font-size: 0.82rem;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .kpi-value {
+      font-size: 1.55rem;
+      font-weight: 800;
+      color: var(--primary-dark);
+      margin-top: 0.2rem;
+    }
+
+    .kpi-sub {
+      font-size: 0.76rem;
+      color: var(--muted);
+      margin-top: 0.2rem;
+    }
+
+    /* النماذج */
+    .grid-form {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(195px, 1fr));
+      gap: 0.85rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .form-group.full {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      font-size: 0.83rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    input, select, textarea {
+      padding: 0.56rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.9rem;
+      background: #fff;
+      color: var(--text);
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(11, 74, 125, 0.12);
+    }
+
+    /* الأزرار */
+    .btn {
+      padding: 0.55rem 0.95rem;
+      border-radius: 8px;
+      border: none;
+      font-size: 0.86rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      transition: 0.2s;
+    }
+
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-accent { background: var(--accent); color: #fff; }
+    .btn-accent:hover { background: var(--accent-hover); }
+    .btn-outline { background: #fff; color: var(--primary); border: 1px solid var(--border); }
+    .btn-outline:hover { background: var(--primary-light); }
+    .btn-danger { background: var(--danger-bg); color: var(--danger); padding: 0.35rem 0.6rem; font-size: 0.78rem; }
+    .btn-sm { padding: 0.35rem 0.65rem; font-size: 0.8rem; }
+
+    /* جدول إكسيل التفاعلي */
+    .excel-wrap {
+      overflow-x: auto;
+      border: 1px solid #94a3b8;
+      border-radius: 8px;
+    }
+
+    table.excel-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.86rem;
+      background: #fff;
+    }
+
+    table.excel-table th,
+    table.excel-table td {
+      border: 1px solid #cbd5e1;
+      padding: 0.45rem 0.6rem;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    table.excel-table th {
+      background: #dbeafe;
+      color: var(--primary-dark);
+      font-weight: 800;
+      position: sticky;
+      top: 0;
+    }
+
+    table.excel-table tr:nth-child(even) td {
+      background: #f8fafc;
+    }
+
+    table.excel-table tr:hover td {
+      background: #eff6ff;
+    }
+
+    .cell-input {
+      width: 100%;
+      min-width: 95px;
+      padding: 0.32rem 0.45rem;
+      border: 1px solid transparent;
+      background: transparent;
+      border-radius: 4px;
+      font-size: 0.86rem;
+      font-weight: 600;
+    }
+
+    .cell-input:focus {
+      background: #fff;
+      border-color: var(--primary);
+    }
+
+    .pill {
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.76rem;
+      font-weight: 700;
+    }
+
+    .pill-done { background: var(--success-bg); color: var(--success); }
+    .pill-prog { background: var(--warning-bg); color: var(--warning); }
+    .pill-need { background: var(--danger-bg); color: var(--danger); }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      background: var(--primary-dark);
+      color: #fff;
+      padding: 0.75rem 1.2rem;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(15px);
+      transition: 0.25s;
+      z-index: 999;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .menu-toggle {
+      display: none;
+      background: var(--primary-light);
+      color: var(--primary);
+      border: none;
+      border-radius: 8px;
+      padding: 0.45rem 0.75rem;
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+
+    @media print {
+      .sidebar, .official-banner .banner-actions, .no-print { display: none !important; }
+      .main-wrapper { margin-right: 0 !important; }
+      body { background: #fff; }
+      .card { box-shadow: none; border: 1px solid #000; }
+    }
+
+    @media (max-width: 880px) {
+      .sidebar { transform: translateX(100%); }
+      .sidebar.open { transform: translateX(0); }
+      .main-wrapper { margin-right: 0; }
+      .menu-toggle { display: inline-block; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. شاشة تسجيل الدخول -->
+  <div class="auth-screen" id="authScreen">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="ministry">وزارة الموارد المائية والري</div>
+        <h1>الإدارة العامة للموارد المائية والري بجنوب الوادي بتوشكى</h1>
+        <div class="date-pill" id="loginDateDisplay"></div>
+      </div>
+
+      <form id="loginForm" style="display:flex; flex-direction:column; gap:0.9rem;">
+        <div class="form-group">
+          <label for="loginEmail">البريد الإلكتروني</label>
+          <input type="email" id="loginEmail" required placeholder="admin@toshka-irrigation.gov.eg" />
+        </div>
+        <div class="form-group">
+          <label for="loginPassword">كلمة المرور</label>
+          <input type="password" id="loginPassword" required placeholder="••••••••" />
+        </div>
+        <button type="submit" class="btn btn-primary" style="padding:0.75rem;">🔐 تسجيل الدخول إلى المنصة</button>
+      </form>
+
+      <div style="margin-top:1.1rem; padding-top:0.9rem; border-top:1px dashed var(--border); font-size:0.82rem; color:var(--muted);">
+        <div style="font-weight:700; color:var(--primary-dark); margin-bottom:0.4rem;">دخول تجريبي سريع (للمعاينة الفورية):</div>
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <button type="button" class="btn btn-outline btn-sm" id="demoAdminBtn">👑 دخول كـ أدمن الإدارة</button>
+          <button type="button" class="btn btn-outline btn-sm" id="demoEngBtn">👷 دخول كـ مهندس فرع 4</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. واجهة المنصة الرئيسية -->
+  <div class="app-shell" id="appShell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-title">الإدارة العامة للموارد المائية والري بجنوب الوادي بتوشكى</div>
+        <div class="brand-sub">منظومة المتابعة الميدانية والتصرفات</div>
+      </div>
+
+      <div class="user-box">
+        <div id="sidebarUserName" style="font-weight:700;">-</div>
+        <div id="sidebarUserZone" style="font-size:0.78rem; color:#e2e8f0;">-</div>
+        <span id="sidebarRoleBadge" class="user-role-badge">-</span>
+      </div>
+
+      <ul class="nav-list" id="navList"></ul>
+
+      <div class="sidebar-footer">
+        <button class="btn btn-danger" id="logoutBtn" style="width:100%; justify-content:center;">🚪 تسجيل الخروج</button>
+      </div>
+    </aside>
+
+    <div class="main-wrapper">
+      <header class="official-banner">
+        <div style="display:flex; align-items:center; gap:0.75rem;">
+          <button class="menu-toggle" id="menuToggle">☰</button>
+          <div class="banner-info">
+            <h2>الإدارة العامة للموارد المائية والري بجنوب الوادي بتوشكى</h2>
+            <div class="banner-meta" id="bannerDateText"></div>
+          </div>
+        </div>
+        <div class="banner-actions">
+          <span id="connStatus" class="status-badge status-local">وضع محلي (localStorage)</span>
+          <button class="btn btn-accent btn-sm" id="exportExcelBtn">📊 تصدير شيت Excel</button>
+          <button class="btn btn-outline btn-sm" id="exportJsonBtn">💾 نسخ احتياطي JSON</button>
+        </div>
+      </header>
+
+      <main class="content" id="mainContent"></main>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // =========================================================================
+    // 1. إعدادات Firebase والمناطق المعتمدة بالإدارة
+    // =========================================================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyBG7ldaL6toYCkzBRWZInT5GnwXKuBEtoQ",
+      authDomain: "data-cc6b1.firebaseapp.com",
+      projectId: "data-cc6b1",
+      storageBucket: "data-cc6b1.firebasestorage.app",
+      messagingSenderId: "766137137911",
+      appId: "1:766137137911:web:262aca159dd8d14a14f1f2",
+      measurementId: "G-ZYBRQ5FH2K"
+    };
+
+    // البريد الرسمي للأدمن الرئيسي (يمكن تعديله هنا أو من لوحة الأدمن)
+    const MASTER_ADMIN_EMAIL = "admin@toshka.gov.eg";
+
+    const ZONES = [
+      "جميع المناطق (الإدارة العامة)",
+      "هندسة القناة الرئيسية (الشيخ زايد)",
+      "هندسة فرع 1",
+      "هندسة فرع 2",
+      "هندسة فرع 3",
+      "هندسة فرع 4"
+    ];
+
+    // =========================================================================
+    // 2. دوال التاريخ العربي والـ Toast
+    // =========================================================================
+    function getArabicDateFull() {
+      const now = new Date();
+      return now.toLocaleDateString("ar-EG", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric"
+      });
+    }
+
+    function getTodayISO() {
+      return new Date().toISOString().split("T")[0];
+    }
+
+    function showToast(msg) {
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.classList.add("show");
+      clearTimeout(window._tTimer);
+      window._tTimer = setTimeout(() => el.classList.remove("show"), 3200);
+    }
+
+    function esc(str) {
+      return String(str ?? "")
+        .replace(/&/g, "&")
+        .replace(/</g, "<")
+        .replace(/>/g, ">")
+        .replace(/"/g, """);
+    }
+
+    // =========================================================================
+    // 3. معادلة حساب التصرف من المنسوب (Stage-Discharge Rating Curve)
+    // Q (م³/ث) = C * (H - H0)^n   |   الحجم اليومي (ألف م³/يوم) = Q * 86.4
+    // =========================================================================
+    function calculateDischargeFromLevel(level, c = 12.5, h0 = 175.0, n = 1.5) {
+      const H = parseFloat(level);
+      const C = parseFloat(c) || 12.5;
+      const H0 = parseFloat(h0) || 0;
+      const N = parseFloat(n) || 1.5;
+      if (isNaN(H) || H <= H0) {
+        return { qCms: 0, dailyThousandM3: 0 };
+      }
+      const qCms = C * Math.pow(H - H0, N);
+      const dailyThousandM3 = qCms * 86.4;
+      return {
+        qCms: Number(qCms.toFixed(3)),
+        dailyThousandM3: Number(dailyThousandM3.toFixed(2))
+      };
+    }
+
+    // =========================================================================
+    // 4. طبقة البيانات والصلاحيات (Firebase Auth + Firestore + localStorage)
+    // =========================================================================
+    class ToshkaSystem {
+      constructor() {
+        this.isCloud = false;
+        this.auth = null;
+        this.db = null;
+        this.secondaryApp = null;
+        this.currentUser = null; // { uid, email, name, role: 'admin'|'user', zone }
+        this.records = this._loadLocal("records", this._seedInitialRecords());
+        this.users = this._loadLocal("users", this._seedInitialUsers());
+        this.listeners = [];
+        this.unsubRecords = null;
+        this.unsubUsers = null;
+      }
+
+      _seedInitialUsers() {
+        return [
+          {
+            uid: "demo_admin",
+            name: "مدير عام الإدارة (أدمن)",
+            email: "admin@toshka.gov.eg",
+            passwordHint: "123456",
+            role: "admin",
+            zone: "جميع المناطق (الإدارة العامة)"
+          },
+          {
+            uid: "demo_eng_4",
+            name: "مهندس منطقة فرع 4",
+            email: "branch4@toshka.gov.eg",
+            passwordHint: "123456",
+            role: "user",
+            zone: "هندسة فرع 4"
+          }
+        ];
+      }
+
+      _seedInitialRecords() {
+        const today = getTodayISO();
+        const r1 = calculateDischargeFromLevel(178.40, 14.2, 175.0, 1.5);
+        const r2 = calculateDischargeFromLevel(177.85, 8.5, 175.0, 1.5);
+        return [
+          {
+            id: "rec_1",
+            date: today,
+            zone: "هندسة القناة الرئيسية (الشيخ زايد)",
+            canalName: "فم ترعة الشيخ زايد الرئيسية",
+            level: 178.40,
+            coefC: 14.2,
+            datumH0: 175.0,
+            expN: 1.5,
+            dischargeCms: r1.qCms,
+            dailyVolumeK: r1.dailyThousandM3,
+            cleaningStatus: "مطهرة بالكامل",
+            notes: "انتظام المناسيب والتصرفات خلف القنطرة",
+            updatedBy: "admin@toshka.gov.eg"
+          },
+          {
+            id: "rec_2",
+            date: today,
+            zone: "هندسة فرع 4",
+            canalName: "مأخذ دليل فرع 4",
+            level: 177.85,
+            coefC: 8.5,
+            datumH0: 175.0,
+            expN: 1.5,
+            dischargeCms: r2.qCms,
+            dailyVolumeK: r2.dailyThousandM3,
+            cleaningStatus: "جاري التطهير",
+            notes: "متابعة أعمال إزالة الحشائش بالكيلو 12",
+            updatedBy: "branch4@toshka.gov.eg"
+          }
+        ];
+      }
+
+      _loadLocal(key, fallback) {
+        try {
+          const raw = localStorage.getItem(`toshka_sys_${key}`); return raw ? JSON.parse(raw) : fallback; } catch { return fallback; } }  _saveLocal(key, val) { localStorage.setItem(`toshka_sys_${key}`, JSON.stringify(val));
+      }
+
+      initFirebase() {
+        try {
+          if (typeof firebase === "undefined") throw new Error("Offline");
+          if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+          }
+          this.auth = firebase.auth();
+          this.db = firebase.firestore();
+          this.isCloud = true;
+          this._updateConnBadge(true);
+
+          this.auth.onAuthStateChanged(async (fbUser) => {
+            if (fbUser) {
+              await this._resolveUserProfile(fbUser);
+            }
+          });
+        } catch {
+          this.isCloud = false;
+          this._updateConnBadge(false);
+        }
+      }
+
+      _updateConnBadge(online) {
+        const el = document.getElementById("connStatus");
+        if (!el) return;
+        if (online) {
+          el.className = "status-badge status-cloud";
+          el.textContent = "🟢 متصل بـ Firebase السحابي";
+        } else {
+          el.className = "status-badge status-local";
+          el.textContent = "🟠 وضع محلي (localStorage)";
+        }
+      }
+
+      async _resolveUserProfile(fbUser) {
+        const email = (fbUser.email || "").toLowerCase();
+        let profile = this.users.find((u) => u.email.toLowerCase() === email);
+
+        if (this.isCloud && this.db) {
+          try {
+            const docSnap = await this.db.collection("toshka_users").doc(fbUser.uid).get();
+            if (docSnap.exists) {
+              profile = { uid: fbUser.uid, ...docSnap.data() };
+            }
+          } catch (e) {
+            console.warn("تعذر جلب ملف المستخدم من Firestore:", e);
+          }
+        }
+
+        if (!profile) {
+          const isMaster = email === MASTER_ADMIN_EMAIL.toLowerCase();
+          profile = {
+            uid: fbUser.uid,
+            email,
+            name: isMaster ? "مدير عام الإدارة (أدمن)" : email.split("@")[0],
+            role: isMaster ? "admin" : "user",
+            zone: isMaster ? "جميع المناطق (الإدارة العامة)" : "هندسة فرع 4"
+          };
+        }
+
+        this.currentUser = profile;
+        this._bindCloudListeners();
+        renderAuthenticatedUI();
+      }
+
+      _bindCloudListeners() {
+        if (!this.isCloud || !this.db || !this.currentUser) return;
+
+        if (this.unsubRecords) this.unsubRecords();
+        let q = this.db.collection("toshka_field_records");
+        // غير الأدمن يرى منطقته فقط من قاعدة البيانات مباشرة
+        if (this.currentUser.role !== "admin") {
+          q = q.where("zone", "==", this.currentUser.zone);
+        }
+
+        this.unsubRecords = q.onSnapshot(
+          (snap) => {
+            const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+            list.sort((a, b) => (b.updatedAtMs || 0) - (a.updatedAtMs || 0));
+            this.records = list;
+            this._saveLocal("records", list);
+            this._notify();
+          },
+          (err) => console.warn("مزامنة السجلات:", err)
+        );
+
+        if (this.currentUser.role === "admin") {
+          if (this.unsubUsers) this.unsubUsers();
+          this.unsubUsers = this.db.collection("toshka_users").onSnapshot((snap) => {
+            const uList = snap.docs.map((d) => ({ uid: d.id, ...d.data() }));
+            if (uList.length) {
+              this.users = uList;
+              this._saveLocal("users", uList);
+              this._notify();
+            }
+          });
+        }
+      }
+
+      async login(email, password) {
+        const cleanEmail = email.trim().toLowerCase();
+        // محاولة الدخول عبر Firebase Auth أولاً
+        if (this.isCloud && this.auth) {
+          try {
+            const cred = await this.auth.signInWithEmailAndPassword(cleanEmail, password);
+            await this._resolveUserProfile(cred.user);
+            return;
+          } catch (fbErr) {
+            // إذا كان حساباً محلياً مضافاً في وضع الأوفلاين
+            const localMatch = this.users.find(
+              (u) => u.email.toLowerCase() === cleanEmail && u.passwordHint === password
+            );
+            if (!localMatch) {
+              throw new Error("بيانات الدخول غير صحيحة أو لم يتم تفعيل Email/Password في Firebase.");
+            }
+            this.currentUser = localMatch;
+            renderAuthenticatedUI();
+            return;
+          }
+        }
+
+        // وضع محلي
+        const found = this.users.find(
+          (u) => u.email.toLowerCase() === cleanEmail && (!u.passwordHint || u.passwordHint === password)
+        );
+        if (!found) {
+          throw new Error("البريد الإلكتروني أو كلمة المرور غير صحيحة.");
+        }
+        this.currentUser = found;
+        renderAuthenticatedUI();
+      }
+
+      loginDemo(role) {
+        const target =
+          role === "admin"
+            ? this.users.find((u) => u.role === "admin") || this._seedInitialUsers()[0]
+            : this.users.find((u) => u.role === "user") || this._seedInitialUsers()[1];
+        this.currentUser = target;
+        renderAuthenticatedUI();
+        showToast(`مرحباً بك: ${target.name}`); }  async logout() { if (this.isCloud && this.auth) { try { await this.auth.signOut(); } catch {} } this.currentUser = null; document.getElementById("appShell").classList.remove("active"); document.getElementById("authScreen").style.display = "flex"; }  // إرجاع السجلات حسب صلاحية المستخدم الحالي getVisibleRecords() { if (!this.currentUser) return []; if (this.currentUser.role === "admin") { return this.records; } return this.records.filter((r) => r.zone === this.currentUser.zone); }  async addRecord(rec) { const entry = { ...rec, updatedBy: this.currentUser.email, updatedAtMs: Date.now() }; const tempId = "rec_" + Date.now() + "_" + Math.random().toString(36).slice(2, 5); this.records = [{ id: tempId, ...entry }, ...this.records]; this._saveLocal("records", this.records); this._notify();  if (this.isCloud && this.db) { try { await this.db.collection("toshka_field_records").add(entry); } catch (e) { console.warn("حُفظ محلياً (تعذر الرفع السحابي):", e); } } }  async updateRecord(id, patch) { this.records = this.records.map((r) => { if (r.id !== id) return r; const merged = { ...r, ...patch, updatedBy: this.currentUser.email, updatedAtMs: Date.now() }; // إعادة حساب التصرف تلقائياً إذا تغير المنسوب أو المعاملات const calc = calculateDischargeFromLevel( merged.level, merged.coefC, merged.datumH0, merged.expN ); merged.dischargeCms = calc.qCms; merged.dailyVolumeK = calc.dailyThousandM3; return merged; }); this._saveLocal("records", this.records); this._notify();  const target = this.records.find((r) => r.id === id); if (this.isCloud && this.db && target && !id.startsWith("rec_")) { try { const { id: _ignore, ...payload } = target; await this.db.collection("toshka_field_records").doc(id).update(payload); } catch (e) { console.warn("تعذر تحديث السجل سحابياً:", e); } } }  async deleteRecord(id) { this.records = this.records.filter((r) => r.id !== id); this._saveLocal("records", this.records); this._notify();  if (this.isCloud && this.db && !id.startsWith("rec_")) { try { await this.db.collection("toshka_field_records").doc(id).delete(); } catch {} } }  // صلاحية الأدمن: إضافة مستخدم جديد بالإيميل والباسوورد دون تسجيل خروج الأدمن async adminCreateUser({ name, email, password, role, zone }) { if (this.currentUser?.role !== "admin") { throw new Error("غير مصرح: هذه الصلاحية للأدمن فقط."); } const cleanEmail = email.trim().toLowerCase(); let newUid = "usr_" + Date.now();  if (this.isCloud && typeof firebase !== "undefined") { try { if (!this.secondaryApp) { this.secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryUserCreator"); } const secAuth = this.secondaryApp.auth(); const created = await secAuth.createUserWithEmailAndPassword(cleanEmail, password); newUid = created.user.uid; await secAuth.signOut();  await this.db.collection("toshka_users").doc(newUid).set({ name, email: cleanEmail, role, zone, createdAtMs: Date.now() }); } catch (e) { console.warn("Firebase Auth createUser:", e.message); throw new Error(`خطأ من Firebase: ${e.message}`);
+          }
+        }
+
+        const newUserObj = { uid: newUid, name, email: cleanEmail, passwordHint: password, role, zone };
+        this.users = [newUserObj, ...this.users.filter((u) => u.email !== cleanEmail)];
+        this._saveLocal("users", this.users);
+        this._notify();
+      }
+
+      async adminUpdateUserZone(uid, newZone, newRole) {
+        if (this.currentUser?.role !== "admin") return;
+        this.users = this.users.map((u) =>
+          u.uid === uid ? { ...u, zone: newZone, role: newRole } : u
+        );
+        this._saveLocal("users", this.users);
+        this._notify();
+
+        if (this.isCloud && this.db && !uid.startsWith("demo_") && !uid.startsWith("usr_")) {
+          try {
+            await this.db.collection("toshka_users").doc(uid).update({ zone: newZone, role: newRole });
+          } catch {}
+        }
+      }
+
+      subscribe(fn) {
+        this.listeners.push(fn);
+      }
+
+      _notify() {
+        this.listeners.forEach((fn) => fn());
+      }
+    }
+
+    const sys = new ToshkaSystem();
+
+    // =========================================================================
+    // 5. الواجهات والأدوات (الواجهة الرئيسية + شيت السجل + المذكرة + إدارة المستخدمين)
+    // =========================================================================
+    let activeTab = "dashboard";
+
+    function getNavItems() {
+      const items = [
+        { id: "dashboard", icon: "🏛️", label: "الواجهة الرئيسية والملخص" },
+        { id: "excel_sheet", icon: "📊", label: "سجل المناسيب والتصرفات (Excel)" },
+        { id: "memo_builder", icon: "📝", label: "إعداد المذكرة الشاملة بالملخص" }
+      ];
+      if (sys.currentUser?.role === "admin") {
+        items.push({ id: "admin_users", icon: "👑", label: "إدارة المستخدمين والصلاحيات" });
+      }
+      return items;
+    }
+
+    function renderAuthenticatedUI() {
+      document.getElementById("authScreen").style.display = "none";
+      document.getElementById("appShell").classList.add("active");
+
+      const u = sys.currentUser;
+      document.getElementById("sidebarUserName").textContent = u.name;
+      document.getElementById("sidebarUserZone").textContent = `النطاق: ${u.zone}`; const badge = document.getElementById("sidebarRoleBadge"); if (u.role === "admin") { badge.textContent = "👑 صلاحية أدمن (تحكم كامل)"; badge.className = "user-role-badge"; } else { badge.textContent = "👷 مهندس منطقة (نطاق محدد)"; badge.className = "user-role-badge eng"; }  document.getElementById("bannerDateText").textContent = `📅 ${getArabicDateFull()}`;
+
+      const navList = document.getElementById("navList");
+      navList.innerHTML = getNavItems()
+        .map(
+          (item) => `
+          <li>
+            <button class="nav-btn ${activeTab === item.id ? "active" : ""}" data-tab="${item.id}">
+              <span>${item.icon}</span>
+              <span>${item.label}</span>
+            </button>
+          </li>
+        `
+        )
+        .join("");
+
+      renderActiveTab();
+    }
+
+    function renderActiveTab() {
+      const container = document.getElementById("mainContent");
+      if (activeTab === "dashboard") renderDashboard(container);
+      else if (activeTab === "excel_sheet") renderExcelSheet(container);
+      else if (activeTab === "memo_builder") renderMemoBuilder(container);
+      else if (activeTab === "admin_users") renderAdminUsers(container);
+    }
+
+    // -------------------------------------------------------------------------
+    // الواجهة 1: الصفحة الرئيسية والملخص + نظرة سريعة على السجل
+    // -------------------------------------------------------------------------
+    function renderDashboard(container) {
+      const rows = sys.getVisibleRecords();
+      const totalRecords = rows.length;
+      const totalDischargeCms = rows.reduce((s, r) => s + (parseFloat(r.dischargeCms) || 0), 0);
+      const totalDailyVolK = rows.reduce((s, r) => s + (parseFloat(r.dailyVolumeK) || 0), 0);
+      const avgLevel = totalRecords
+        ? rows.reduce((s, r) => s + (parseFloat(r.level) || 0), 0) / totalRecords
+        : 0;
+      const cleanDone = rows.filter((r) => r.cleaningStatus === "مطهرة بالكامل").length;
+      const cleanPct = totalRecords ? Math.round((cleanDone / totalRecords) * 100) : 0;
+
+      // تجميع الملخص حسب المنطقة
+      const byZone = {};
+      rows.forEach((r) => {
+        if (!byZone[r.zone]) {
+          byZone[r.zone] = { count: 0, qCms: 0, volK: 0, levels: [] };
+        }
+        byZone[r.zone].count++;
+        byZone[r.zone].qCms += parseFloat(r.dischargeCms) || 0;
+        byZone[r.zone].volK += parseFloat(r.dailyVolumeK) || 0;
+        byZone[r.zone].levels.push(parseFloat(r.level) || 0);
+      });
+
+      container.innerHTML = `
+        <div class="card" style="background:linear-gradient(135deg, #0b4a7d 0%, #0d7a73 100%); color:#fff; border:none;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+            <div>
+              <div style="font-size:0.85rem; opacity:0.9;">وزارة الموارد المائية والري</div>
+              <h1 style="font-size:1.45rem; font-weight:800; margin:0.2rem 0;">الإدارة العامة للموارد المائية والري بجنوب الوادي بتوشكى</h1>
+              <div style="font-size:0.92rem; opacity:0.95;">📆 ${getArabicDateFull()} \vert{} النطاق المعروض: <strong>${esc(sys.currentUser.zone)}</strong></div>
+            </div>
+            <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+              <button class="btn" style="background:#fff; color:#0b4a7d;" onclick="window._goTab('excel_sheet')">📊 فتح شيت المناسيب والتصرفات</button>
+              <button class="btn" style="background:#fbbf24; color:#0f172a;" onclick="window._goTab('memo_builder')">📝 توليد المذكرة الشاملة</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-label">إجمالي نقاط الرصد المسجلة</div>
+            <div class="kpi-value">${totalRecords} موقع</div>
+            <div class="kpi-sub">حسب صلاحية النطاق الجغرافي</div>
+          </div>
+          <div class="kpi-card accent">
+            <div class="kpi-label">إجمالي التصرفات المحسوبة</div>
+            <div class="kpi-value">${totalDischargeCms.toFixed(2)} م³/ث</div>
+            <div class="kpi-sub">بإجمالي حجم ${totalDailyVolK.toFixed(1)} ألف م³/يوم</div>
+          </div>
+          <div class="kpi-card success">
+            <div class="kpi-label">متوسط المناسيب المرصودة</div>
+            <div class="kpi-value">${avgLevel.toFixed(2)} م</div>
+            <div class="kpi-sub">مقاسة فوق سطح البحر</div>
+          </div>
+          <div class="kpi-card warning">
+            <div class="kpi-label">موقف التطهيرات المكتملة</div>
+            <div class="kpi-value">${cleanPct}%</div>
+            <div class="kpi-sub">${cleanDone} من أصل ${totalRecords} موقع مطهر</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">📌 الملخص التنفيذي حسب الهندسات / المناطق</h3>
+          </div>
+          <div class="excel-wrap">
+            <table class="excel-table">
+              <thead>
+                <tr>
+                  <th>المنطقة / الهندسة</th>
+                  <th>عدد المواقع</th>
+                  <th>متوسط المنسوب (م)</th>
+                  <th>إجمالي التصرف المحسوب (م³/ث)</th>
+                  <th>الحجم اليومي (ألف م³/يوم)</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${
+                  Object.keys(byZone).length
+                    ? Object.entries(byZone)
+                        .map(([z, info]) => {
+                          const avgL = info.levels.reduce((a, b) => a + b, 0) / info.levels.length;
+                          return `
+                            <tr>
+                              <td><strong>${esc(z)}</strong></td>
+                              <td>${info.count}</td>
+                              <td>${avgL.toFixed(2)}</td>
+                              <td><strong>${info.qCms.toFixed(3)}</strong></td>
+                              <td>${info.volK.toFixed(2)}</td>
+                            </tr>
+                          `;
+                        })
+                        .join("")
+                    : `<tr><td colspan="5" style="text-align:center; padding:1.5rem;">لا توجد بيانات مسجلة في هذا النطاق بعد.</td></tr>`
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    // -------------------------------------------------------------------------
+    // الواجهة 2: شيت إكسيل سجل المتابعة الميدانية والمناسيب وحساب التصرفات
+    // -------------------------------------------------------------------------
+    function renderExcelSheet(container) {
+      const isAdmin = sys.currentUser.role === "admin";
+      const rows = sys.getVisibleRecords();
+      const zoneOptions = isAdmin
+        ? ZONES.filter((z) => !z.startsWith("جميع"))
+        : [sys.currentUser.zone];
+
+      container.innerHTML = `
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">➕ إضافة قراءة منسوب جديدة (يُحسب التصرف تلقائياً من المنسوب)</h3>
+          </div>
+          <form id="addRecordForm" class="grid-form">
+            <div class="form-group">
+              <label>المنطقة / الهندسة *</label>
+              <select id="recZone" ${isAdmin ? "" : "disabled"}>
+                ${zoneOptions.map((z) => `<option value="${esc(z)}">${esc(z)}</option>`).join("")}
+              </select>
+            </div>
+            <div class="form-group">
+              <label>اسم الترعة / الموقع الهيدروليكي *</label>
+              <input type="text" id="recCanal" required placeholder="مثال: فم ترعة فرع 4" />
+            </div>
+            <div class="form-group">
+              <label>المنسوب المقاس H (متر) *</label>
+              <input type="number" step="0.01" id="recLevel" required placeholder="178.20" />
+            </div>
+            <div class="form-group">
+              <label>منسوب العتب H0 (م)</label>
+              <input type="number" step="0.01" id="recH0" value="175.00" />
+            </div>
+            <div class="form-group">
+              <label>معامل المعايرة C</label>
+              <input type="number" step="0.1" id="recC" value="12.5" />
+            </div>
+            <div class="form-group">
+              <label>التصرف المحسوب (م³/ث)</label>
+              <input type="text" id="recCalcPreview" readonly style="background:#e8f1f8; font-weight:800; color:#0b4a7d;" value="0.000" />
+            </div>
+            <div class="form-group">
+              <label>حالة التطهير</label>
+              <select id="recStatus">
+                <option value="مطهرة بالكامل">مطهرة بالكامل</option>
+                <option value="جاري التطهير">جاري التطهير</option>
+                <option value="تحتاج تطهير">تحتاج تطهير</option>
